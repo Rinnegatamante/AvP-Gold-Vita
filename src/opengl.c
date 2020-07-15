@@ -24,6 +24,12 @@
 #include "aw.h"
 #include "opengl.h"
 
+int _newlib_heap_size_user = 256 * 1024 * 1024;
+uint16_t *gIndices;
+float *gVertexBuffer;
+uint16_t *gIndicesPtr;
+float *gVertexBufferPtr;
+
 int LightIntensityAtPoint(VECTORCH *pointPtr);
 
 extern IMAGEHEADER ImageHeaderArray[];
@@ -723,10 +729,17 @@ static void InitOpenGLDefaultTexture(void) {
 void InitOpenGL(int firsttime)
 {
 	if (firsttime) {
+		vglInitExtended(0x1400000, 960, 544, 0x100000, SCE_GXM_MULTISAMPLE_4X);
+		vglUseVram(GL_TRUE);
+		vglStartRendering();
+		
 		InitOpenGLPrograms();
-		check_for_errors();
 		InitOpenGLDefaultTexture();
-		check_for_errors();
+		
+		gVertexBufferPtr = (float*)malloc(0x1800000);
+		gIndicesPtr = (uint16_t*)malloc(0x600000);
+		gVertexBuffer = gVertexBufferPtr;
+		gIndices = gIndicesPtr;
 	}
 
 	CurrentTranslucencyMode = TRANSLUCENCY_OFF;
@@ -734,19 +747,6 @@ void InitOpenGL(int firsttime)
 	
 	CurrentFilteringMode = FILTERING_BILINEAR_OFF;
 	CurrentlyBoundTexture = NULL;
-	pglBindTexture(GL_TEXTURE_2D, 0);
-
-	// create array and element array buffers, as required by WebGL
-	pglGenBuffers(1, &ArrayBuffer);
-	pglGenBuffers(1, &ElementArrayBuffer);
-
-	pglBindBuffer(GL_ARRAY_BUFFER, ArrayBuffer);
-	pglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ElementArrayBuffer);
-
-	pglVertexAttribPointer(OPENGL_VERTEX_ATTRIB_INDEX, 4, GL_FLOAT, GL_FALSE, sizeof(varr[0]), (const GLvoid*) 0);
-	pglVertexAttribPointer(OPENGL_TEXCOORD_ATTRIB_INDEX, 2, GL_FLOAT, GL_FALSE, sizeof(varr[0]), (const GLvoid*) 16);
-	pglVertexAttribPointer(OPENGL_COLOR0_ATTRIB_INDEX, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(varr[0]), (const GLvoid*) 24);
-	pglVertexAttribPointer(OPENGL_COLOR1_ATTRIB_INDEX, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(varr[0]), (const GLvoid*) 28);
 
 	CurrShaderProgram = AVP_SHADER_PROGRAM_MAX;
 	SelectProgram(AVP_SHADER_PROGRAM_DEFAULT);
@@ -756,18 +756,22 @@ void InitOpenGL(int firsttime)
 		
 	varrc = 0;
 	varrp = varr;
-
-	check_for_errors();
 }
 
 static void FlushTriangleBuffers(int backup)
 {
 	if (tarrc) {
 		// not optimal but required by WebGL
-		pglBufferData(GL_ARRAY_BUFFER, varrc * sizeof(varr[0]), varr, GL_STREAM_DRAW);
-		pglBufferData(GL_ELEMENT_ARRAY_BUFFER, tarrc * sizeof(tarr[0]), tarr, GL_STREAM_DRAW);
-
-		pglDrawElements(GL_TRIANGLES, tarrc*3, GL_UNSIGNED_SHORT, (const GLvoid*) 0);
+		memcpy_neon(gVertexBuffer, varr, varrc * sizeof(varr[0]));
+		memcpy_neon(gIndices, tarr, tarrc * sizeof(tarr[0]));
+		
+		vglVertexAttribPointerMapped(0, gVertexBuffer);
+		vglIndexPointerMapped(gIndices);
+		
+		vglDrawObjects(GL_TRIANGLES, tarrc * 3, GL_FALSE);
+		
+		gVertexBuffer += varrc * sizeof(varr[0]);
+		gIndices += tarrc * sizeof(tarr[0]);
 		
 		tarrc = 0;
 		tarrp = tarr;

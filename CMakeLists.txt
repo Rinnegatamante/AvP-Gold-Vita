@@ -311,6 +311,7 @@ IF(NOT AVP_WEB)
     INCLUDE_DIRECTORIES(${VITASDK}/arm-vita-eabi/include/SDL2)
 
     target_link_libraries(avp
+		vitashark
 		mp3lame
 		openal
 		avutil
@@ -330,6 +331,7 @@ IF(NOT AVP_WEB)
 		SceHid_stub
 		SceAppMgr_stub
 		SceCommonDialog_stub
+		SceShaccCg_stub
 		SDL2
 		vitaGL
 		mathneon
