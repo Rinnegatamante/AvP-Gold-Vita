@@ -911,7 +911,7 @@ void InitGameDirectories(char *argv0)
 
 	homedir = getenv("HOME");
 	if (homedir == NULL)
-		homedir = ".";
+		homedir = "ux0:data/AvP";
 	localdir = (char *)malloc(strlen(homedir)+10);
 	strcpy(localdir, homedir);
 	strcat(localdir, "/");
@@ -991,7 +991,7 @@ void InitGameDirectories(char *argv0)
 	
 	if (gamedir == NULL) {
 		/* 5. current directory */
-		gamedir = ".";
+		gamedir = "ux0:data/AvP";
 	}
 	
 	assert(gamedir != NULL);
