@@ -133,214 +133,132 @@ static void SetTranslucencyMode(enum TRANSLUCENCY_TYPE mode)
 	}
 }
 
-#if defined(USE_OPENGL_ES)
-#define SHADER_PRAGMAS "\n"
-#define SHADER_VERSION "#version 100\n"
-#else
-#define SHADER_PRAGMAS "\n"
-#define SHADER_VERSION "#version 120\n"
-#endif
-
-#if USE_OPENGL_ES
-
-#define SHADER_SETUP \
-"#define HIGHP highp\n" \
-"#define MEDIUMP mediump\n" \
-"#define LOWP lowp\n"
-
-#else
-
-#define SHADER_SETUP \
-"#ifdef GL_ES\n" \
-"#define HIGHP highp\n" \
-"#define MEDIUMP mediump\n" \
-"#define LOWP lowp\n" \
-"#else\n" \
-"#define HIGHP\n" \
-"#define MEDIUMP\n" \
-"#define LOWP\n" \
-"#endif\n"
-
-#endif
-
 static const char AVP_VERTEX_SHADER_SOURCE[] =
-   SHADER_VERSION
-   SHADER_PRAGMAS
-   SHADER_SETUP
-   "\n"
-   "attribute HIGHP vec4 aVertex;\n"
-   "attribute HIGHP vec2 aTexCoord;\n"
-   "attribute LOWP vec4 aColor0;\n"
-   "attribute LOWP vec4 aColor1;\n"
-   "\n"
-   "varying HIGHP vec2 vTexCoord;\n"
-   "varying LOWP vec4 vColor0;\n"
-   "varying LOWP vec4 vColor1;\n"
-   "\n"
-   "void main(void)\n"
-   "{\n"
-   "	gl_Position = aVertex;\n"
-   "	vTexCoord	= aTexCoord;\n"
-   "	vColor0		= aColor0;\n"
-   "	vColor1     = aColor1;\n"
-   "}\n"
-   ;
+	"void main(\n"
+	"	float4 aVertex,\n"
+	"	float2 aTexCoord,\n"
+	"	fixed4 aColor0,\n"
+	"	fixed4 aColor1,\n"
+	"	float2 out vTexCoord : TEXCOORD0,\n"
+	"	fixed4 out vColor0 : COLOR0,\n"
+	"	fixed4 out vColor1 : COLOR1,\n"
+	"	float4 out vPosition : POSITION)\n"
+	"{\n"
+	"	vPosition = aVertex;\n"
+	"	vTexCoord = aTexCoord;\n"
+	"	vColor0 = aColor0;\n"
+	"	vColor1 = aColor1;\n"
+	"}\n"
+	;
 
 static const char AVP_VERTEX_SHADER_SOURCE_NO_SECONDARY[] =
-   SHADER_VERSION
-   SHADER_PRAGMAS
-   SHADER_SETUP
-   "\n"
-   "attribute HIGHP vec4 aVertex;\n"
-   "attribute HIGHP vec2 aTexCoord;\n"
-   "attribute LOWP vec4 aColor0;\n"
-   "\n"
-   "varying HIGHP vec2 vTexCoord;\n"
-   "varying LOWP vec4 vColor0;\n"
-   "\n"
-   "void main(void)\n"
-   "{\n"
-   "	gl_Position = aVertex;\n"
-   "	vTexCoord	= aTexCoord;\n"
-   "	vColor0		= aColor0;\n"
-   "}\n"
-   ;
+	"void main(\n"
+	"	float4 aVertex,\n"
+	"	float2 aTexCoord,\n"
+	"	fixed4 aColor0,\n"
+	"	float2 out vTexCoord : TEXCOORD0,\n"
+	"	fixed4 out vColor0 : COLOR0,\n"
+	"	float4 out vPosition : POSITION)\n"
+	"{\n"
+	"	vPosition = aVertex;\n"
+	"	vTexCoord = aTexCoord;\n"
+	"	vColor0 = aColor0;\n"
+	"}\n"
+	;
 
 static const char AVP_VERTEX_SHADER_SOURCE_NO_TEXTURE[] =
-   SHADER_VERSION
-   SHADER_PRAGMAS
-   SHADER_SETUP
-   "\n"
-   "attribute HIGHP vec4 aVertex;\n"
-   "attribute LOWP vec4 aColor0;\n"
-   "\n"
-   "varying LOWP vec4 vColor0;\n"
-   "\n"
-   "void main(void)\n"
-   "{\n"
-   "	gl_Position = aVertex;\n"
-   "	vColor0		= aColor0;\n"
-   "}\n"
-   ;
+	"void main(\n"
+	"	float4 aVertex,\n"
+	"	fixed4 aColor0,\n"
+	"	fixed4 out vColor0 : COLOR0,\n"
+	"	float4 out vPosition : POSITION)\n"
+	"{\n"
+	"	vPosition = aVertex;\n"
+	"	vColor0 = aColor0;\n"
+	"}\n"
+	;
 
 static const char AVP_VERTEX_SHADER_SOURCE_NO_COLOR[] =
-   SHADER_VERSION
-   SHADER_PRAGMAS
-   SHADER_SETUP
-   "\n"
-   "attribute HIGHP vec4 aVertex;\n"
-   "attribute HIGHP vec2 aTexCoord;\n"
-   "\n"
-   "varying HIGHP vec2 vTexCoord;\n"
-   "\n"
-   "void main(void)\n"
-   "{\n"
-   "	gl_Position = aVertex;\n"
-   "	vTexCoord	= aTexCoord;\n"
-   "}\n"
-   ;
+	"void main(\n"
+	"	float4 aVertex,\n"
+	"	float2 aTexCoord,\n"
+	"	float2 out vTexCoord : TEXCOORD0,\n"
+	"	float4 out vPosition : POSITION)\n"
+	"{\n"
+	"	vPosition = aVertex;\n"
+	"	vTexCoord = aTexCoord;\n"
+	"}\n"
+	;
 
 static const char AVP_FRAGMENT_SHADER_SOURCE[] =
-   SHADER_VERSION
-   SHADER_PRAGMAS
-   SHADER_SETUP
-   "\n"
-   "uniform LOWP sampler2D uTexture;\n"
-   "\n"
-   "varying HIGHP vec2 vTexCoord;\n"
-   "varying LOWP vec4 vColor0;\n"
-   "varying LOWP vec4 vColor1;\n"
-   "\n"
-   "void main(void)\n"
-   "{\n"
-   "\n"
-   "	MEDIUMP vec4 t       = texture2D( uTexture, vTexCoord );\n"
-   "	if (t.a == 0.0) discard;\n"
-   "	gl_FragColor = t * vColor0 + vColor1;\n"
-   "}\n"
-   ;
+	"void main(\n"
+	"	float2 vTexCoord : TEXCOORD0,\n"
+	"	half4 vColor0 : COLOR0,\n"
+	"	half4 vColor1 : COLOR1,\n"
+	"	uniform sampler2D uTexture : TEXUNIT0,\n"
+	"	float4 out frag_clr : COLOR)\n"
+	"{\n"
+	"	half4 t = tex2D(uTexture, vTexCoord);\n"
+	"	if (t.a == 0.0) discard;\n"
+	"	frag_clr = t * vColor0 + vColor1;\n"
+	"}\n"
+	;
 
 static const char AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY[] =
-   SHADER_VERSION
-   SHADER_PRAGMAS
-   SHADER_SETUP
-   "\n"
-   "uniform LOWP sampler2D uTexture;\n"
-   "\n"
-   "varying HIGHP vec2 vTexCoord;\n"
-   "varying LOWP vec4 vColor0;\n"
-   "\n"
-   "void main(void)\n"
-   "{\n"
-   "	MEDIUMP vec4 t       = texture2D( uTexture, vTexCoord );\n"
-   "	if (t.a == 0.0) discard;\n"
-   "	gl_FragColor = t * vColor0;\n"
-   "}\n"
-   ;
+	"void main(\n"
+	"	float2 vTexCoord : TEXCOORD0,\n"
+	"	half4 vColor0 : COLOR0,\n"
+	"	uniform sampler2D uTexture : TEXUNIT0,\n"
+	"	float4 out frag_clr : COLOR)\n"
+	"{\n"
+	"	half4 t = tex2D(uTexture, vTexCoord);\n"
+	"	if (t.a == 0.0) discard;\n"
+	"	frag_clr = t * vColor0;\n"
+	"}\n"
+	;
 
 static const char AVP_FRAGMENT_SHADER_SOURCE_NO_TEXTURE[] =
-   SHADER_VERSION
-   SHADER_PRAGMAS
-   SHADER_SETUP
-   "\n"
-   "varying LOWP vec4 vColor0;\n"
-   "\n"
-   "void main(void)\n"
-   "{\n"
-   "	gl_FragColor = vColor0;\n"
-   "}\n"
-   ;
+	"void main(\n"
+	"	half4 vColor0 : COLOR0)\n"
+	"{\n"
+	"	frag_clr = vColor0;\n"
+	"}\n"
+	;
 
 static const char AVP_FRAGMENT_SHADER_SOURCE_NO_DISCARD[] =
-   SHADER_VERSION
-   SHADER_PRAGMAS
-   SHADER_SETUP
-   "\n"
-   "uniform LOWP sampler2D uTexture;\n"
-   "\n"
-   "varying HIGHP vec2 vTexCoord;\n"
-   "varying LOWP vec4 vColor0;\n"
-   "varying LOWP vec4 vColor1;\n"
-   "\n"
-   "void main(void)\n"
-   "{\n"
-   "	MEDIUMP vec4 t       = texture2D( uTexture, vTexCoord );\n"
-   "	gl_FragColor = t * vColor0 + vColor1;\n"
-   "}\n"
-   ;
+	"void main(\n"
+	"	float2 vTexCoord : TEXCOORD0,\n"
+	"	half4 vColor0 : COLOR0,\n"
+	"	half4 vColor1 : COLOR1,\n"
+	"	uniform sampler2D uTexture : TEXUNIT0,\n"
+	"	float4 out frag_clr : COLOR)\n"
+	"{\n"
+	"	half4 t = tex2D(uTexture, vTexCoord);\n"
+	"	frag_clr = t * vColor0 + vColor1;\n"
+	"}\n"
+	;
 
 static const char AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY_NO_DISCARD[] =
-   SHADER_VERSION
-   SHADER_PRAGMAS
-   SHADER_SETUP
-   "\n"
-   "uniform LOWP sampler2D uTexture;\n"
-   "\n"
-   "varying HIGHP vec2 vTexCoord;\n"
-   "varying LOWP vec4 vColor0;\n"
-   "\n"
-   "void main(void)\n"
-   "{\n"
-   "	MEDIUMP vec4 t       = texture2D( uTexture, vTexCoord );\n"
-   "	gl_FragColor = t * vColor0;\n"
-   "}\n"
-   ;
+	"void main(\n"
+	"	float2 vTexCoord : TEXCOORD0,\n"
+	"	half4 vColor0 : COLOR0,\n"
+	"	uniform sampler2D uTexture : TEXUNIT0,\n"
+	"	float4 out frag_clr : COLOR)\n"
+	"{\n"
+	"	half4 t = tex2D(uTexture, vTexCoord);\n"
+	"	frag_clr = t * vColor0;\n"
+	"}\n"
+	;
 
 static const char AVP_FRAGMENT_SHADER_SOURCE_NO_COLOR_NO_DISCARD[] =
-   SHADER_VERSION
-   SHADER_PRAGMAS
-   SHADER_SETUP
-   "\n"
-   "uniform LOWP sampler2D uTexture;\n"
-   "\n"
-   "varying HIGHP vec2 vTexCoord;\n"
-   "\n"
-   "void main(void)\n"
-   "{\n"
-   "	MEDIUMP vec4 t       = texture2D( uTexture, vTexCoord );\n"
-   "	gl_FragColor = t;\n"
-   "}\n"
-   ;
+	"void main(\n"
+	"	float2 vTexCoord : TEXCOORD0,\n"
+	"	uniform sampler2D uTexture : TEXUNIT0,\n"
+	"	float4 out frag_clr : COLOR)\n"
+	"{\n"
+	"	frag_clr = tex2D(uTexture, vTexCoord);\n"
+	"}\n"
+	;
 
 enum AVP_VERTEX_SHADER {
 	AVP_VERTEX_SHADER_DEFAULT,
@@ -729,7 +647,7 @@ static void InitOpenGLDefaultTexture(void) {
 void InitOpenGL(int firsttime)
 {
 	if (firsttime) {
-		vglInitExtended(0x1400000, 960, 544, 0x100000, SCE_GXM_MULTISAMPLE_4X);
+		vglInitExtended(0x100000, 960, 544, 0x100000, SCE_GXM_MULTISAMPLE_4X);
 		vglUseVram(GL_TRUE);
 		vglStartRendering();
 		
