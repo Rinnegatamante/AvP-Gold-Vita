@@ -647,6 +647,10 @@ static void InitOpenGLDefaultTexture(void) {
 void InitOpenGL(int firsttime)
 {
 	if (firsttime) {
+		scePowerSetArmClockFrequency(444);
+		scePowerSetBusClockFrequency(222);
+		scePowerSetGpuClockFrequency(222);
+		scePowerSetGpuXbarClockFrequency(166);
 		vglInitExtended(0x100000, 960, 544, 0x100000, SCE_GXM_MULTISAMPLE_4X);
 		vglUseVram(GL_TRUE);
 		vglStartRendering();
