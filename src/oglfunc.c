@@ -153,85 +153,20 @@ void load_ogl_functions(int mode)
 	int arb_framebuffer_object;
 
 	ogl_missing_func = NULL;
-	
-	// Base OpenGL / OpenGL ES
-	LoadOGLProc(avpPFNGLACTIVETEXTUREPROC, glActiveTexture);
-	LoadOGLProc(avpPFNGLBINDTEXTUREPROC, glBindTexture);
-	LoadOGLProc(avpPFNGLBLENDFUNCPROC, glBlendFunc);
-	LoadOGLProc(avpPFNGLCLEARPROC, glClear);
-	LoadOGLProc(avpPFNGLCLEARCOLORPROC, glClearColor);
-	LoadOGLProc(avpPFNGLCULLFACEPROC, glCullFace);
-	LoadOGLProc(avpPFNGLDELETETEXTURESPROC, glDeleteTextures);
-	LoadOGLProc(avpPFNGLDEPTHFUNCPROC, glDepthFunc);
-	LoadOGLProc(avpPFNGLDEPTHMASKPROC, glDepthMask);
-	LoadOGLProc2(avpPFNGLDEPTHRANGEPROC, glDepthRange, glDepthRangef);
-	LoadOGLProc(avpPFNGLDISABLEPROC, glDisable);
-	LoadOGLProc(avpPFNGLDRAWELEMENTSPROC, glDrawElements);
-	LoadOGLProc(avpPFNGLENABLEPROC, glEnable);
-	LoadOGLProc(avpPFNGLFRONTFACEPROC, glFrontFace);
-	LoadOGLProc(avpPFNGLGENTEXTURESPROC, glGenTextures);
-	LoadOGLProc(avpPFNGLGETERRORPROC, glGetError);
-	LoadOGLProc(avpPFNGLGETFLOATVPROC, glGetFloatv);
-	LoadOGLProc(avpPFNGLGETINTEGERVPROC, glGetIntegerv);
-	LoadOGLProc(avpPFNGLGETSTRINGPROC, glGetString);
-	LoadOGLProc(avpPFNGLGETTEXPARAMETERFVPROC, glGetTexParameterfv);
-	LoadOGLProc(avpPFNGLHINTPROC, glHint);
-	LoadOGLProc(avpPFNGLPIXELSTOREIPROC, glPixelStorei);
-	LoadOGLProc(avpPFNGLPOLYGONOFFSETPROC, glPolygonOffset);
-	LoadOGLProc(avpPFNGLREADPIXELSPROC, glReadPixels);
-	LoadOGLProc(avpPFNGLTEXIMAGE2DPROC, glTexImage2D);
-	LoadOGLProc(avpPFNGLTEXPARAMETERFPROC, glTexParameterf);
-	LoadOGLProc(avpPFNGLTEXPARAMETERIPROC, glTexParameteri);
-	LoadOGLProc(avpPFNGLTEXSUBIMAGE2DPROC, glTexSubImage2D);
-	LoadOGLProc(avpPFNGLVIEWPORTPROC, glViewport);
-
-	// OpenGL 2.1 / OpenGL ES 2.0
-	LoadOGLProc(avpPFNGLATTACHSHADERPROC, glAttachShader);
-	LoadOGLProc(avpPFNGLBINDATTRIBLOCATIONPROC, glBindAttribLocation);
-	LoadOGLProc(avpPFNGLBINDBUFFERPROC, glBindBuffer);
-	LoadOGLProc(avpPFNGLBUFFERDATAPROC, glBufferData);
-	LoadOGLProc(avpPFNGLBUFFERSUBDATAPROC, glBufferSubData);
-	LoadOGLProc(avpPFNGLCREATEPROGRAMPROC, glCreateProgram);
-	LoadOGLProc(avpPFNGLCREATESHADERPROC, glCreateShader);
-	LoadOGLProc(avpPFNGLCOMPILESHADERPROC, glCompileShader);
-	LoadOGLProc(avpPFNGLDELETEBUFFERSPROC, glDeleteBuffers);
-	LoadOGLProc(avpPFNGLDELETEPROGRAMPROC, glDeleteProgram);
-	LoadOGLProc(avpPFNGLDELETESHADERPROC, glDeleteShader);
-	LoadOGLProc(avpPFNGLDISABLEVERTEXATTRIBARRAYPROC, glDisableVertexAttribArray);
-	LoadOGLProc(avpPFNGLENABLEVERTEXATTRIBARRAYPROC, glEnableVertexAttribArray);
-	LoadOGLProc(avpPFNGLGENBUFFERSPROC, glGenBuffers);
-	LoadOGLProc(avpPFNGLGETATTRIBLOCATIONPROC, glGetAttribLocation);
-	LoadOGLProc(avpPFNGLGETPROGRAMINFOLOGPROC, glGetProgramInfoLog);
-	LoadOGLProc(avpPFNGLGETPROGRAMIVPROC, glGetProgramiv);
-	LoadOGLProc(avpPFNGLGETSHADERINFOLOGPROC, glGetShaderInfoLog);
-	LoadOGLProc(avpPFNGLGETSHADERIVPROC, glGetShaderiv);
-	LoadOGLProc(avpPFNGLGETUNIFORMLOCATIONPROC, glGetUniformLocation);
-	LoadOGLProc(avpPFNGLLINKPROGRAMPROC, glLinkProgram);
-	LoadOGLProc(avpPFNGLSHADERSOURCEPROC, glShaderSource);
-	LoadOGLProc(avpPFNGLVALIDATEPROGRAMPROC, glValidateProgram);
-	LoadOGLProc(avpPFNGLVERTEXATTRIBPOINTERPROC, glVertexAttribPointer);
-	LoadOGLProc(avpPFNGLUNIFORM1IPROC, glUniform1i);
-	LoadOGLProc(avpPFNGLUNIFORMMATRIX4FVPROC, glUniformMatrix4fv);
-	LoadOGLProc(avpPFNGLUSEPROGRAMPROC, glUseProgram);
 
 	if (!mode) {
 		return;
 	}
 	
-	if (ogl_missing_func) {
-		fprintf(stderr, "Unable to load OpenGL Library: missing function %s\n", ogl_missing_func);
-		exit(EXIT_FAILURE);
-	}
-	
 #if !defined(NDEBUG)
-	printf("GL_VENDOR: %s\n", pglGetString(GL_VENDOR));
-	printf("GL_RENDERER: %s\n", pglGetString(GL_RENDERER));
-	printf("GL_VERSION: %s\n", pglGetString(GL_VERSION));
-	printf("GL_SHADING_LANGUAGE_VERSION: %s\n", pglGetString(GL_SHADING_LANGUAGE_VERSION));
-	printf("GL_EXTENSIONS: %s\n", pglGetString(GL_EXTENSIONS));
+	printf("GL_VENDOR: %s\n", glGetString(GL_VENDOR));
+	printf("GL_RENDERER: %s\n", glGetString(GL_RENDERER));
+	printf("GL_VERSION: %s\n", glGetString(GL_VERSION));
+	printf("GL_SHADING_LANGUAGE_VERSION: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
+	printf("GL_EXTENSIONS: %s\n", glGetString(GL_EXTENSIONS));
 #endif
 
-	ext = (const char *) pglGetString(GL_EXTENSIONS);
+	ext = (const char *) glGetString(GL_EXTENSIONS);
 
 	// GL_EXT_framebuffer_object / GL_ARB_framebuffer_object / OpenGL ES 2.0
 	// figure out which version of framebuffer objects to use, if any
@@ -299,14 +234,5 @@ void load_ogl_functions(int mode)
 
 int check_for_errors_(const char *file, int line)
 {
-	GLenum error;
-	int diderror = 0;
-	
-	while ((error = pglGetError()) != GL_NO_ERROR) {
-		fprintf(stderr, "OPENGL ERROR: %04X (%s:%d)\n", error, file, line);
-		
-		diderror = 1;
-	}
-	
-	return diderror;
+	return 0;
 }

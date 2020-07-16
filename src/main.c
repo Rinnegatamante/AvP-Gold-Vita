@@ -49,18 +49,19 @@
 #include <emscripten.h>
 #endif
 
-#if defined(__IPHONEOS__) || defined(__ANDROID__) || defined(__SWITCH__)
+#if defined(__IPHONEOS__) || defined(__ANDROID__) || defined(__SWITCH__) || defined(VITA)
 #define FIXED_WINDOW_SIZE 1
 #endif
 
-#if defined(__IPHONEOS__) || defined(__ANDROID__) || defined(__SWITCH__)
+#if defined(__IPHONEOS__) || defined(__ANDROID__) || defined(__SWITCH__) || defined(VITA)
 #define USE_OPENGL_ES 1
 #endif
 
-#warning WINDOW_SIZE_DEBUG is on in all builds
-#if 1 //!defined(NDEBUG)
-#define WINDOW_SIZE_DEBUG
-#endif
+extern uint16_t *gIndices;
+extern uint16_t *gIndicesPtr;
+extern float *gVertexBuffer;
+extern float *gVertexBufferPtr;
+uint16_t *fb_pixels = NULL;
 
 static void main_loop(void);
 
@@ -86,8 +87,6 @@ extern unsigned char GotAnyKey;
 extern int NormalFrameTime;
 
 SDL_Window *window;
-SDL_GLContext context;
-SDL_Surface *surface;
 
 SDL_Joystick *joy;
 JOYINFOEX JoystickData;
@@ -239,7 +238,7 @@ unsigned char *GetScreenShot24(int *width, int *height)
 {
 	unsigned char *buf;
 
-	if (surface == NULL) {
+	if (fb_pixels == NULL) {
 		return NULL;
 	}
 
@@ -249,25 +248,18 @@ unsigned char *GetScreenShot24(int *width, int *height)
 		*width = DrawableWidth;
 		*height = DrawableHeight;
 
-		pglReadPixels(0, 0, DrawableWidth, DrawableHeight, GL_RGB, GL_UNSIGNED_BYTE, buf);
+		glReadPixels(0, 0, DrawableWidth, DrawableHeight, GL_RGB, GL_UNSIGNED_BYTE, buf);
 	} else {
-		buf = (unsigned char *)malloc(surface->w * surface->h * 3);
+		buf = (unsigned char *)malloc(640 * 480 * 3);
 
 		unsigned char *ptrd;
 		unsigned short int *ptrs;
 		int x, y;
-	
-		if (SDL_MUSTLOCK(surface)) {
-			if (SDL_LockSurface(surface) < 0) {
-				free(buf);
-				return NULL; /* ... */
-			}
-		}
 		
 		ptrd = buf;
-		for (y = 0; y < surface->h; y++) {
-			ptrs = (unsigned short *)(((unsigned char *)surface->pixels) + (surface->h-y-1)*surface->pitch);
-			for (x = 0; x < surface->w; x++) {
+		for (y = 0; y < 480; y++) {
+			ptrs = (unsigned short *)(((unsigned char *)fb_pixels) + (480-y-1)*640);
+			for (x = 0; x < 640; x++) {
 				unsigned int c;
 				
 				c = *ptrs;
@@ -280,12 +272,9 @@ unsigned char *GetScreenShot24(int *width, int *height)
 			}
 		}
 		
-		*width = surface->w;
-		*height = surface->h;
+		*width = 640;
+		*height = 480;
 
-		if (SDL_MUSTLOCK(surface)) {
-			SDL_UnlockSurface(surface);
-		}
 	}
 
 #if 0
@@ -296,7 +285,7 @@ unsigned char *GetScreenShot24(int *width, int *height)
 		int i;
 		
 		ptr = buf;
-		for (i = 0; i < surface->w*surface->h; i++) {
+		for (i = 0; i < 640*480; i++) {
 			ptr[i*3+0] = redtable[ptr[i*3+0]]>>8;
 			ptr[i*3+1] = greentable[ptr[i*3+1]]>>8;
 			ptr[i*3+2] = bluetable[ptr[i*3+2]]>>8;
@@ -324,16 +313,16 @@ typedef struct VideoModeStruct
 	int available;
 } VideoModeStruct;
 VideoModeStruct VideoModeList[] = {
-	{ 	512, 	384,	0	},
-	{	640,	480,	0	},
-	{	800,	600,	0	},
-	{	1024,	768,	0	},
-	{	1152,	864,	0	},
-	{	1280,   720,	0	},
-	{	1280,	960,	0	},
-	{	1280,	1024,	0	},
-	{	1600,	1200,	0	},
-	{	1920,	1080,	0	}
+	{ 	960, 	544,	0	},
+	{	960,	544,	0	},
+	{	960,	544,	0	},
+	{	960,	544,	0	},
+	{	960,	544,	0	},
+	{	960,    544,	0	},
+	{	960,	544,	0	},
+	{	960,	544,	0	},
+	{	960,	544,	0	},
+	{	960,	544,	0	}
 };
 
 int CurrentVideoMode;
@@ -449,60 +438,7 @@ int InitSDL()
 	emscripten_set_main_loop(main_loop, 0, 0);
 #endif
 
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		fprintf(stderr, "SDL Init failed: %s\n", SDL_GetError());
-		exit(EXIT_FAILURE);
-	}
-
-	atexit(SDL_Quit);
-
 	SDL_AddEventWatch(SDLEventFilter, NULL);
-
-#if 0
-	SDL_Rect **SDL_AvailableVideoModes;
-	SDL_AvailableVideoModes = SDL_ListModes(NULL, SDL_WINDOW_FULLSCREEN | SDL_WINDOW_OPENGL);
-	if (SDL_AvailableVideoModes == NULL)
-		return -1;
-	
-	if (SDL_AvailableVideoModes != (SDL_Rect **)-1) {
-		int i, j, foundit;
-		
-		foundit = 0;
-		for (i = 0; i < TotalVideoModes; i++) {
-			SDL_Rect **modes = SDL_AvailableVideoModes;
-			
-			for (j = 0; modes[j]; j++) {
-				if (modes[j]->w >= VideoModeList[i].w &&
-				    modes[j]->h >= VideoModeList[i].h) {
-					if (SDL_VideoModeOK(VideoModeList[i].w, VideoModeList[i].h, 16, SDL_FULLSCREEN | SDL_OPENGL)) {
-						/* assume SDL isn't lying to us */
-						VideoModeList[i].available = 1;
-						
-						foundit = 1;
-					}
-					break;
-				}
-			}			
-		}		
-		if (foundit == 0)
-			return -1;
-	} else {
-		int i, foundit;
-		
-		foundit = 0;
-		for (i = 0; i < TotalVideoModes; i++) {
-			if (SDL_VideoModeOK(VideoModeList[i].w, VideoModeList[i].h, 16, SDL_FULLSCREEN | SDL_OPENGL)) {
-				/* assume SDL isn't lying to us */
-				VideoModeList[i].available = 1;
-				
-				foundit = 1;
-			}
-		}
-		
-		if (foundit == 0)
-			return -1;
-	}
-#endif
 
 {
 	int i;
@@ -515,6 +451,8 @@ int InitSDL()
 			//foundit = 1;
 		//}
 	}
+	
+	fb_pixels = (uint16_t*)malloc(640*480*2);
 }
 
 	LoadDeviceAndVideoModePreferences();
@@ -542,116 +480,12 @@ int InitSDL()
 			JoystickData.dwPOV = (DWORD) -1;
 		}
 	}
-	
-	Uint32 rmask, gmask, bmask, amask;
-	
-	// pre-create the software surface in OpenGL RGBA order
-	// menus.c assumes RGB565; possible to support both?
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-    rmask = 0xff000000;
-    gmask = 0x00ff0000;
-    bmask = 0x0000ff00;
-    amask = 0x000000ff;
-#else
-    rmask = 0x0000f800;
-    gmask = 0x000007e0;
-    bmask = 0x0000001f;
-    amask = 0x00000000;
-#endif
-
-	surface = SDL_CreateRGBSurface(0, 640, 480, 16, rmask, gmask, bmask, amask);
-	if (surface == NULL) {
-		return -1;
-	}
 
 	return 0;
 }
 
-#if defined(WINDOW_SIZE_DEBUG)
-static void DumpVideoModeInfo(SDL_Window* w) {
-	int numVideoDisplays;
-	int displayIndex;
-	int numDisplayModes;
-	int modeIndex;
-	const char* displayName;
-	numVideoDisplays = SDL_GetNumVideoDisplays();
-	if (numVideoDisplays > 0) {
-		for (displayIndex = 0; displayIndex < numVideoDisplays; displayIndex++) {
-			displayName = SDL_GetDisplayName(displayIndex);
-			printf("%d: %s\n", displayIndex, displayName);
-			
-			SDL_Rect bounds;
-			SDL_DisplayMode mode;
-			
-			if (SDL_GetDisplayBounds(displayIndex, &bounds) == 0) {
-				printf("\tbounds: %4d,%4d,%4d,%4d\n",
-					   bounds.x,
-					   bounds.y,
-					   bounds.w,
-					   bounds.h);
-			}
-			
-			if (SDL_GetDesktopDisplayMode(displayIndex, &mode) == 0) {
-				printf("\tdesktop: %08x,%4d,%4d,%d\n",
-					   mode.format,
-					   mode.w,
-					   mode.h,
-					   mode.refresh_rate);
-			}
-			
-			if (SDL_GetCurrentDisplayMode(displayIndex, &mode) == 0) {
-				printf("\tcurrent: %08x,%4d,%4d,%d\n",
-					   mode.format,
-					   mode.w,
-					   mode.h,
-					   mode.refresh_rate);
-			}
-			
-			numDisplayModes = SDL_GetNumDisplayModes(displayIndex);
-			for (modeIndex = 0; modeIndex < numDisplayModes; modeIndex++) {
-				if (SDL_GetDisplayMode(displayIndex, modeIndex, &mode) == 0) {
-					printf("\t%2d: %08x,%4d,%4d,%d\n",
-						   modeIndex,
-						   mode.format,
-						   mode.w,
-						   mode.h,
-						   mode.refresh_rate);
-				}
-			}
-		}
-	}
-	
-	if (w != NULL) {
-		int displayIndex;
-		SDL_DisplayMode mode;
-
-		displayIndex = SDL_GetWindowDisplayIndex(w);
-		
-		printf("Window display index: %d\n", displayIndex);
-		if (SDL_GetWindowDisplayMode(w, &mode) == 0) {
-			printf("Window display mode: %08x,%4d,%4d,%d\n",
-				   mode.format,
-				   mode.w,
-				   mode.h,
-				   mode.refresh_rate);
-		}
-
-		int width, height;
-		SDL_GetWindowSize(w, &width, &height);
-		printf("Window size: %4d,%4d\n", width, height);
-
-		SDL_GL_GetDrawableSize(w, &width, &height);
-		printf("Window drawable size: %4d,%4d\n", width, height);
-	}
-}
-#endif
-
 static void SetWindowSize(int PhysicalWidth, int PhysicalHeight, int VirtualWidth, int VirtualHeight)
 {
-#if defined(WINDOW_SIZE_DEBUG)
-	printf("SetWindowSize(%d,%d,%d,%d); %d\n", PhysicalWidth, PhysicalHeight, VirtualWidth, VirtualHeight, CurrentVideoMode);
-#endif
-
 	ViewportWidth = PhysicalWidth;
 	ViewportHeight = PhysicalHeight;
 	DrawableWidth = ViewportWidth;
@@ -668,9 +502,7 @@ static void SetWindowSize(int PhysicalWidth, int PhysicalHeight, int VirtualWidt
 	ScreenDescriptorBlock.SDB_ClipUp    = 0;
 	ScreenDescriptorBlock.SDB_ClipDown  = VirtualHeight;
 
-	if (window != NULL) {
-		pglViewport(0, 0, DrawableWidth, DrawableHeight);
-	}
+	glViewport(0, 0, DrawableWidth, DrawableHeight);
 }
 
 static int SetSoftVideoMode(int Width, int Height, int Depth)
@@ -692,38 +524,6 @@ static int SetSoftVideoMode(int Width, int Height, int Depth)
 /* ** */
 static void load_opengl_library(const char *lib)
 {
-	char tmppath[PATH_MAX];
-	size_t len, copylen;
-	
-	if (lib == NULL) {
-		if (SDL_GL_LoadLibrary(NULL) == 0) {
-			/* success */
-			return;
-		}
-		
-		fprintf( stderr, "ERROR: no opengl libraries given\n" );
-		exit( EXIT_FAILURE );
-	}
-	
-	while (lib != NULL && *lib) {
-		len = strcspn(lib, ":");
-		
-		copylen = min(len, PATH_MAX-1);
-		
-		strncpy(tmppath, lib, copylen);
-		tmppath[copylen] = 0;
-		
-		if (SDL_GL_LoadLibrary(tmppath) == 0) {
-			/* success */
-			return;
-		}
-		
-		lib += len;
-		lib += strspn(lib, ":");
-	}
-	
-	fprintf(stderr, "ERROR: unable to initialize opengl library: %s\n", SDL_GetError());
-	exit(EXIT_FAILURE);
 }
 
 /* ** */
@@ -771,14 +571,7 @@ static int SetOGLVideoMode(int Width, int Height)
 
 		load_ogl_functions(1);
 
-		pglViewport(0, 0, Width, Height);
-
-		pglBindTexture(GL_TEXTURE_2D, FullscreenTexture);
-
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		glViewport(0, 0, Width, Height);
 
 		// this should be deleted and rebuilt when the screen size changes
 		GLint maxRenderbufferSize = 4096;
@@ -786,8 +579,19 @@ static int SetOGLVideoMode(int Width, int Height)
 		GLint maxViewportDims  = 4096;
 		GLint maxRenderSize  = 4096;
 
-		FramebufferTextureWidth = Width;
-		FramebufferTextureHeight = Height;
+		// create fullscreen window texture
+		glGenTextures(1, &FullscreenTexture);
+
+		glBindTexture(GL_TEXTURE_2D, FullscreenTexture);
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+		FullscreenTextureWidth = 640;
+		FullscreenTextureHeight = 480;
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FullscreenTextureWidth, FullscreenTextureHeight, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL);
 
 		maxRenderSize = maxRenderbufferSize;
 		if (maxRenderSize > maxTextureSize) {
@@ -804,27 +608,25 @@ static int SetOGLVideoMode(int Width, int Height)
 			FramebufferTextureHeight = maxRenderSize;
 		}
 		printf("DEBUG3:%d,%d\n", FramebufferTextureWidth, FramebufferTextureHeight);
-
-		check_for_errors();
+		
+		window = 0xDEADBEEF;
 	}
 
 	SetWindowSize(Width, Height, Width, Height);
 
-	pglEnable(GL_BLEND);
-	pglBlendFunc(GL_SRC_ALPHA, GL_ONE);
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 		
-	pglEnable(GL_DEPTH_TEST);
-	pglDepthFunc(GL_LEQUAL);
-	pglDepthMask(GL_TRUE);
-	pglDepthRange(0.0, 1.0);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
+	glDepthMask(GL_TRUE);
+	glDepthRange(0.0, 1.0);
 
-	pglDisable(GL_CULL_FACE);
+	glDisable(GL_CULL_FACE);
 	
-	pglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	InitOpenGL(firsttime);
-	
-	check_for_errors();
 
 	return 0;
 }
@@ -840,15 +642,10 @@ int ExitWindowsSystem()
 		SDL_JoystickClose(joy);
 	}
 
-	if (FullscreenTexture != 0) {
-		pglDeleteTextures(1, &FullscreenTexture);
-	}
-	FullscreenTexture = 0;
-
 	load_ogl_functions(0);
 	
-	surface = NULL;
-	context = NULL;
+	free(fb_pixels);
+	fb_pixels = NULL;
 	window = NULL;
 
 	return 0;
@@ -1204,8 +1001,8 @@ void CheckForWindowsMessages()
 						} else {
 							SetWindowSize(WindowWidth, WindowHeight, WindowWidth, WindowHeight);
 						}
-						if (pglViewport != NULL) {
-							pglViewport(0, 0, WindowWidth, WindowHeight);
+						if (glViewport != NULL) {
+							glViewport(0, 0, WindowWidth, WindowHeight);
 						}
 						break;
 				}
@@ -1342,43 +1139,6 @@ void CheckForWindowsMessages()
 		}
 	}
 
-//#warning Redo WantX, need to split it out better so fullscreen can temporary set relative without clobbering user setting
-	if ((KeyboardInput[KEY_LEFTALT]||KeyboardInput[KEY_RIGHTALT]) && DebouncedKeyboardInput[KEY_CR]) {
-		if (WantFullscreenToggle != 0) {
-			int displayMode = SDL_GetWindowFlags(window);
-			//printf("Current window mode:%08x\n", displayMode);
-			if ((displayMode & (SDL_WINDOW_FULLSCREEN|SDL_WINDOW_FULLSCREEN_DESKTOP)) != 0) {
-				SDL_SetWindowFullscreen(window, 0);
-			} else {
-				SDL_SetWindowFullscreen(window, WantResolutionChange ? SDL_WINDOW_FULLSCREEN : SDL_WINDOW_FULLSCREEN_DESKTOP);
-			}
-
-			displayMode = SDL_GetWindowFlags(window);
-			//printf("New window mode:%08x\n", displayMode);
-			if ((displayMode & (SDL_WINDOW_FULLSCREEN|SDL_WINDOW_FULLSCREEN_DESKTOP)) != 0) {
-				SDL_SetRelativeMouseMode(SDL_TRUE);
-				WantFullscreen = 1;
-			} else {
-				SDL_SetRelativeMouseMode(WantMouseGrab ? SDL_TRUE : SDL_FALSE);
-				WantFullscreen = 0;
-			}
-		}
-	}
-
-	if (KeyboardInput[KEY_LEFTCTRL] && DebouncedKeyboardInput[KEY_G]) {
-		int IsWindowed = (SDL_GetWindowFlags(window) & (SDL_WINDOW_FULLSCREEN|SDL_WINDOW_FULLSCREEN_DESKTOP)) == 0;
-
-		if (IsWindowed) {
-			WantMouseGrab = WantMouseGrab != 0 ? 0 : 1;
-			if (WantMouseGrab != 0) {
-				SDL_SetRelativeMouseMode(SDL_TRUE);
-			} else {
-				SDL_SetRelativeMouseMode(SDL_FALSE);
-			}
-			WantMouseGrab = (SDL_GetRelativeMouseMode() == SDL_TRUE);
-		}
-	}
-
 	// a second reset of relative mouse state because
 	// enabling relative mouse mode moves the mouse
 	SDL_GetRelativeMouseState(NULL, NULL);
@@ -1389,30 +1149,77 @@ void CheckForWindowsMessages()
 		ScreenShot();
 	}
 }
-        
+  
 void InGameFlipBuffers()
 {
-#if !defined(NDEBUG)
-	check_for_errors();
-#endif
-
-	SDL_GL_SwapWindow(window);
-
-	pglViewport(0, 0, FramebufferTextureWidth, FramebufferTextureHeight);
-	pglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, 960, 544);
+	
+	vglStopRendering();
+	vglStartRendering();
+	gVertexBuffer = gVertexBufferPtr;
+	gIndices = gIndicesPtr;
 }
 
 void FlipBuffers()
 {
-	pglViewport(0, 0, DrawableWidth, DrawableHeight);
-	pglClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glViewport(0, 0, 640,480);
+	glBindTexture(GL_TEXTURE_2D, FullscreenTexture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, fb_pixels);
+	
+	GLfloat x0 = -1.0f;
+	GLfloat x1 =  1.0f;
+	GLfloat y0 = -1.0f;
+	GLfloat y1 =  1.0f;
 
-	pglDisable(GL_BLEND);
-	pglDisable(GL_DEPTH_TEST);
+	GLfloat s0 = 0.0f;
+	GLfloat s1 = 1.0f;
+	GLfloat t0 = 0.0f;
+	GLfloat t1 = 1.0f;
+	
+	gIndices[0] = 0;
+	gIndices[1] = 1;
+	gIndices[2] = 2;
+	gIndices[3] = 0;
+	gIndices[4] = 2;
+	gIndices[5] = 3;
 
-#if !defined(NDEBUG)
-	check_for_errors();
-#endif
+	SelectProgram(AVP_SHADER_PROGRAM_NO_COLOR_NO_DISCARD);
+	
+	gVertexBuffer[0] = x0;
+	gVertexBuffer[1] = y0;
+	gVertexBuffer[2] =-1.0f;
+	gVertexBuffer[3] = 1.0f;
+	gVertexBuffer[4] = s0;
+	gVertexBuffer[5] = t1;
+	
+	gVertexBuffer[8]  = x1;
+	gVertexBuffer[9]  = y0;
+	gVertexBuffer[10] =-1.0f;
+	gVertexBuffer[11] = 1.0f;
+	gVertexBuffer[12] = s1;
+	gVertexBuffer[13] = t1;
+	
+	gVertexBuffer[16] = x1;
+	gVertexBuffer[17] = y1;
+	gVertexBuffer[18] =-1.0f;
+	gVertexBuffer[19] = 1.0f;
+	gVertexBuffer[20] = s1;
+	gVertexBuffer[21] = t0;
+	
+	gVertexBuffer[24] = x0;
+	gVertexBuffer[25] = y1;
+	gVertexBuffer[26] =-1.0f;
+	gVertexBuffer[27] = 1.0f;
+	gVertexBuffer[28] = s0;
+	gVertexBuffer[29] = t0;
+	
+	vglVertexAttribPointerMapped(0, gVertexBuffer);
+	vglIndexPointerMapped(gIndices);
+	vglDrawObjects(GL_TRIANGLES, 6, GL_FALSE);
+	
+	InGameFlipBuffers();
 }
 
 char *AvpCDPath = 0;
@@ -1498,6 +1305,19 @@ int main(int argc, char *argv[])
 #endif
 
 	InitGameDirectories(argv[0]);
+	
+	scePowerSetArmClockFrequency(444);
+	scePowerSetBusClockFrequency(222);
+	scePowerSetGpuClockFrequency(222);
+	scePowerSetGpuXbarClockFrequency(166);
+	vglInitExtended(0x100000, 960, 544, 0x100000, SCE_GXM_MULTISAMPLE_4X);
+	vglUseVram(GL_TRUE);
+	vglStartRendering();
+		
+	gVertexBufferPtr = (float*)malloc(0x1800000);
+	gIndicesPtr = (uint16_t*)malloc(0x600000);
+	gVertexBuffer = gVertexBufferPtr;
+	gIndices = gIndicesPtr;
 	
 	if (InitSDL() == -1) {
 		fprintf(stderr, "Could not find a sutable resolution!\n");
