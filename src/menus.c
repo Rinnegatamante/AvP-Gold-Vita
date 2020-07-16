@@ -308,8 +308,8 @@ static void LoadMenuFont()
 	int c;
 	
 	if ((image->w != 30) || ((image->h % 33) != 0)) {
-		fprintf(stderr, "ERROR: I am going to give up now, because I don't like your font!\n");
-		fprintf(stderr, "Font Size: %d x %d\n", image->w, image->h);
+		log2file("ERROR: I am going to give up now, because I don't like your font!\n");
+		log2file("Font Size: %d x %d\n", image->w, image->h);
 		exit(EXIT_FAILURE);
 	}
 	

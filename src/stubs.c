@@ -26,21 +26,21 @@ int VideoModeNotAvailable=0;
 //void PlayBinkedFMV(char *filenamePtr)
 //{
 /*
-	fprintf(stderr, "PlayBinkedFMV(%s)\n", filenamePtr);
+	log2file("PlayBinkedFMV(%s)\n", filenamePtr);
 */
 //}
 
 //void StartMenuBackgroundBink()
 //{
 /*
-	fprintf(stderr, "StartMenuBackgroundBink()\n");
+	log2file("StartMenuBackgroundBink()\n");
 */
 //}
 
 //int PlayMenuBackgroundBink()
 //{
 /*
-	fprintf(stderr, "PlayMenuBackgroundBink()\n");
+	log2file("PlayMenuBackgroundBink()\n");
 */	
 //	return 0;
 //}
@@ -48,24 +48,24 @@ int VideoModeNotAvailable=0;
 //void EndMenuBackgroundBink()
 //{
 /*
-	fprintf(stderr, "EndMenuBackgroundBink()\n");
+	log2file("EndMenuBackgroundBink()\n");
 */
 //}
 
 /* alt_tab.cpp */
 void ATIncludeSurface(void * pSurface, void * hBackup)
 {
-	fprintf(stderr, "ATIncludeSurface(%p, %p)\n", pSurface, hBackup);
+	log2file("ATIncludeSurface(%p, %p)\n", pSurface, hBackup);
 }
 
 void ATRemoveSurface(void * pSurface)
 {
-	fprintf(stderr, "ATRemoveSurface(%p)\n", pSurface);
+	log2file("ATRemoveSurface(%p)\n", pSurface);
 }
 
 void ATRemoveTexture(void * pTexture)
 {
-	fprintf(stderr, "ATRemoveTexture(%p)\n", pTexture);
+	log2file("ATRemoveTexture(%p)\n", pTexture);
 }
 
 
@@ -73,7 +73,7 @@ void ATRemoveTexture(void * pTexture)
 int GetTextureHandle(IMAGEHEADER *imageHeaderPtr)
 {
 /*
-	fprintf(stderr, "GetTextureHandle(%p)\n", imageHeaderPtr);
+	log2file("GetTextureHandle(%p)\n", imageHeaderPtr);
 */	
 	return 1;
 }
@@ -81,27 +81,27 @@ int GetTextureHandle(IMAGEHEADER *imageHeaderPtr)
 void ReleaseDirect3DNotDDOrImages()
 {
 /*
-	fprintf(stderr, "ReleaseDirect3DNotDDOrImages()\n");
+	log2file("ReleaseDirect3DNotDDOrImages()\n");
 */	
 }
 
 void ReleaseDirect3DNotDD()
 {
 /*
-	fprintf(stderr, "ReleaseDirect3DNotDD()\n");
+	log2file("ReleaseDirect3DNotDD()\n");
 */	
 }
 
 void ReleaseDirect3D()
 {
 /*
-	fprintf(stderr, "ReleaseDirect3D()\n");
+	log2file("ReleaseDirect3D()\n");
 */
 }
 
 void ReloadImageIntoD3DImmediateSurface(IMAGEHEADER* iheader)
 {
-	fprintf(stderr, "ReloadImageIntoD3DImmediateSurface(%p)\n", iheader);
+	log2file("ReloadImageIntoD3DImmediateSurface(%p)\n", iheader);
 }
 
 
@@ -113,14 +113,14 @@ int WireFrameMode;
 void InitDrawTest()
 {
 /*
-	fprintf(stderr, "InitDrawTest()\n");
+	log2file("InitDrawTest()\n");
 */
 }
 
 void CheckWireFrameMode(int shouldBeOn)
 {
 	if (shouldBeOn)
-		fprintf(stderr, "CheckWireFrameMode(%d)\n", shouldBeOn);
+		log2file("CheckWireFrameMode(%d)\n", shouldBeOn);
 }
 
 
@@ -128,7 +128,7 @@ void CheckWireFrameMode(int shouldBeOn)
 void MinimizeAllDDGraphics()
 {
 /*
-	fprintf(stderr, "MinimizeAllDDGraphics()\n");
+	log2file("MinimizeAllDDGraphics()\n");
 */	
 }
 
@@ -139,38 +139,38 @@ int VideoModeColourDepth;
 
 void BlitWin95Char(int x, int y, unsigned char toprint)
 {
-	fprintf(stderr, "BlitWin95Char(%d, %d, %d)\n", x, y, toprint);
+	log2file("BlitWin95Char(%d, %d, %d)\n", x, y, toprint);
 }
 
 void LockSurfaceAndGetBufferPointer()
 {
-	fprintf(stderr, "LockSurfaceAndGetBufferPointer()\n");
+	log2file("LockSurfaceAndGetBufferPointer()\n");
 }
 
 void finiObjectsExceptDD()
 {
 /*
-	fprintf(stderr, "finiObjectsExceptDD()\n");
+	log2file("finiObjectsExceptDD()\n");
 */	
 }
 
 void finiObjects()
 {
 /*
-	fprintf(stderr, "finiObjects()\n");
+	log2file("finiObjects()\n");
 */	
 }
 
 void UnlockSurface()
 {
-	fprintf(stderr, "UnlockSurface()\n");
+	log2file("UnlockSurface()\n");
 }
 
 
 BOOL ChangeDirectDrawObject()
 {
 /*
-	fprintf(stderr, "ChangeDirectDrawObject()\n");
+	log2file("ChangeDirectDrawObject()\n");
 */	
 	return FALSE;
 }
@@ -178,7 +178,7 @@ BOOL ChangeDirectDrawObject()
 int SelectDirectDrawObject(void *pGUID)
 {
 /*
-	fprintf(stderr, "SelectDirectDrawObject(%p)\n", pGUID);
+	log2file("SelectDirectDrawObject(%p)\n", pGUID);
 */
 	return 0;
 }
@@ -186,7 +186,7 @@ int SelectDirectDrawObject(void *pGUID)
 void GenerateDirectDrawSurface()
 {
 /*
-	fprintf(stderr, "GenerateDirectDrawSurface()\n");
+	log2file("GenerateDirectDrawSurface()\n");
 */	
 }
 

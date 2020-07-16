@@ -24,6 +24,22 @@
 #include "aw.h"
 #include "opengl.h"
 
+void log2file(const char *format, ...) {
+	__gnuc_va_list arg;
+	int done;
+	va_start(arg, format);
+	char msg[512];
+	done = vsprintf(msg, format, arg);
+	va_end(arg);
+	int i;
+	sprintf(msg, "%s\n", msg);
+	FILE *log = fopen("ux0:/data/AvP.log", "a+");
+	if (log != NULL) {
+		fwrite(msg, 1, strlen(msg), log);
+		fclose(log);
+	}
+}
+
 int _newlib_heap_size_user = 256 * 1024 * 1024;
 uint16_t *gIndices;
 float *gVertexBuffer;
@@ -128,7 +144,7 @@ static void SetTranslucencyMode(enum TRANSLUCENCY_TYPE mode)
 			glBlendFunc(GL_ZERO, GL_ONE);
 			break;
 		default:
-			fprintf(stderr, "SetTranslucencyMode: invalid blend mode %d\n", mode);
+			log2file("SetTranslucencyMode: invalid blend mode %d\n", mode);
 			break;
 	}
 }
@@ -219,7 +235,8 @@ static const char AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY[] =
 
 static const char AVP_FRAGMENT_SHADER_SOURCE_NO_TEXTURE[] =
 	"void main(\n"
-	"	float4 vColor0 : COLOR0)\n"
+	"	float4 vColor0 : COLOR0,\n"
+	"	float4 out frag_clr : COLOR)\n"
 	"{\n"
 	"	frag_clr = vColor0;\n"
 	"}\n"
@@ -344,23 +361,6 @@ static const struct AvpShaderProgramSource AvpShaderProgramSources[AVP_SHADER_PR
 	}
 };
 
-static const unsigned int AvpShaderProgramAttributes[AVP_SHADER_PROGRAM_MAX+1] = {
-	// AVP_SHADER_PROGRAM_DEFAULT
-	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (1 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (1 << OPENGL_COLOR0_ATTRIB_INDEX) | (1 << OPENGL_COLOR1_ATTRIB_INDEX),
-	// AVP_SHADER_PROGRAM_NO_SECONDARY
-	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (1 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (1 << OPENGL_COLOR0_ATTRIB_INDEX) | (0 << OPENGL_COLOR1_ATTRIB_INDEX),
-	// AVP_SHADER_PROGRAM_NO_TEXTURE
-	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (0 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (1 << OPENGL_COLOR0_ATTRIB_INDEX) | (0 << OPENGL_COLOR1_ATTRIB_INDEX),
-	// AVP_SHADER_PROGRAM_NO_DISCARD
-	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (1 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (1 << OPENGL_COLOR0_ATTRIB_INDEX) | (1 << OPENGL_COLOR1_ATTRIB_INDEX),
-	// AVP_SHADER_PROGRAM_NO_SECONDARY_NO_DISCARD
-	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (1 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (1 << OPENGL_COLOR0_ATTRIB_INDEX) | (0 << OPENGL_COLOR1_ATTRIB_INDEX),
-	// AVP_SHADER_PROGRAM_NO_COLOR_NO_DISCARD
-	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (1 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (0 << OPENGL_COLOR0_ATTRIB_INDEX) | (0 << OPENGL_COLOR1_ATTRIB_INDEX),
-	// AVP_SHADER_PROGRAM_MAX
-	0
-};
-
 static struct AvpVertexShader AvpVertexShaders[AVP_FRAGMENT_SHADER_MAX];
 static struct AvpFragmentShader AvpFragmentShaders[AVP_FRAGMENT_SHADER_MAX];
 static struct AvpShaderProgram AvpShaderPrograms[AVP_SHADER_PROGRAM_MAX];
@@ -369,8 +369,9 @@ static int CompileShader(GLuint shader, const GLchar* shaderSource) {
 	GLint infoLogLength;
 	GLchar* infoLog;
 	GLint compileStatus;
-
-	glShaderSource(shader, 1, &shaderSource, NULL);
+	
+	int size = strlen(shaderSource) - 1;
+	glShaderSource(shader, 1, &shaderSource, &size);
 	glCompileShader(shader);
 
 	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
@@ -378,16 +379,8 @@ static int CompileShader(GLuint shader, const GLchar* shaderSource) {
 }
 
 static int LinkProgram(GLuint program) {
-	GLint infoLogLength;
-	GLchar* infoLog;
-	GLint compileStatus;
-
 	glLinkProgram(program);
 
-	return GL_TRUE;
-}
-
-static int ValidateProgram(GLuint program) {
 	return GL_TRUE;
 }
 
@@ -414,13 +407,6 @@ static int CreateProgram2(GLuint* pprogram, GLuint vertexShader, GLuint fragment
 	// link the program
 	compileStatus = LinkProgram(program);
 
-	if (compileStatus == GL_FALSE) {
-		fprintf(stderr, "program failed to link\n");
-
-		glDeleteProgram(program);
-		return GL_FALSE;
-	}
-
 	*pprogram = program;
 	return GL_TRUE;
 }
@@ -437,7 +423,7 @@ static int InitOpenGLPrograms(void) {
 		status = CompileShader(vertexShader, AvpVertexShaderSources[i]);
 
 		if (status == GL_FALSE) {
-			fprintf(stderr, "vertex shader compilation failed\n");
+			log2file("vertex shader compilation failed\n");
 			return GL_FALSE;
 		}
 
@@ -452,7 +438,7 @@ static int InitOpenGLPrograms(void) {
 		status = CompileShader(fragmentShader, AvpFragmentShaderSources[i]);
 
 		if (status == GL_FALSE) {
-			fprintf(stderr, "fragment shader compilation failed\n");
+			log2file("fragment shader n.%d compilation failed\n", i);
 			return GL_FALSE;
 		}
 
@@ -469,7 +455,7 @@ static int InitOpenGLPrograms(void) {
 
 		status = CreateProgram2(&program, vertexShader, fragmentShader);
 		if (status == GL_FALSE) {
-			fprintf(stderr, "program compilation failed\n");
+			log2file("program compilation failed\n");
 			return GL_FALSE;
 		}
 
@@ -482,11 +468,6 @@ static int InitOpenGLPrograms(void) {
 void SelectProgram(enum AVP_SHADER_PROGRAM program) {
 
 	if (CurrShaderProgram != program) {
-		// supposed to flush here
-
-		unsigned int PrevAttribs = AvpShaderProgramAttributes[CurrShaderProgram];
-		unsigned int NextAttribs = AvpShaderProgramAttributes[program];
-		unsigned int DiffAttribs = PrevAttribs ^ NextAttribs;
 		int ShaderProgram = AvpShaderPrograms[program].programObj;
 
 		CurrShaderProgram = program;
@@ -538,8 +519,8 @@ static void FlushTriangleBuffers(int backup)
 		memcpy_neon(gVertexBuffer, varr, varrc * sizeof(varr[0]));
 		memcpy_neon(gIndices, tarr, tarrc * sizeof(tarr[0]));
 		
-		vglVertexAttribPointerMapped(0, gVertexBuffer);
 		vglIndexPointerMapped(gIndices);
+		vglVertexAttribPointerMapped(0, gVertexBuffer);
 		
 		vglDrawObjects(GL_TRIANGLES, tarrc * 3, GL_FALSE);
 		
@@ -682,7 +663,7 @@ static void CheckTriangleBuffer(int rver, int rtri, D3DTexture *tex, enum TRANSL
 				OUTPUT_TRIANGLE(0, 1, 2);
 				break;
 			default:
-				fprintf(stderr, "DrawTriangles_T2F_C4UB_V4F: vertices = %d\n", rver);
+				log2file("DrawTriangles_T2F_C4UB_V4F: vertices = %d\n", rver);
 		}
 	}	
 #undef OUTPUT_TRIANGLE
@@ -705,7 +686,7 @@ GLuint CreateOGLTexture(D3DTexture *tex, unsigned char *buf)
 	    buf = tex->buf;
 	}
 	if (buf == NULL) {
-	    fprintf(stderr, "CreateOGLTexture - null buffer\n");
+	    log2file("CreateOGLTexture - null buffer\n");
 	    return 0;
 	}
 
@@ -855,11 +836,11 @@ void D3D_DecalSystem_Setup()
 	glDepthMask(GL_FALSE);
 
 	/* enable polygon offset to help lessen decal z-fighting... */
-	glEnable(GL_POLYGON_OFFSET_FILL);
+	/*glEnable(GL_POLYGON_OFFSET_FILL);
 	
 	static GLfloat factor = 0.0f;
 	static GLfloat units = -0.09375f;
-	glPolygonOffset(factor, units);
+	glPolygonOffset(factor, units);*/
 }
 
 void D3D_DecalSystem_End()
@@ -2272,7 +2253,7 @@ int Hardware_RenderSmallMenuText(char *textPtr, int x, int y, int alpha, enum AV
 	switch(format)
 	{
 		default:
-			fprintf(stderr, "Hardware_RenderSmallMenuText: UNKNOWN TEXT FORMAT\n");
+			log2file("Hardware_RenderSmallMenuText: UNKNOWN TEXT FORMAT\n");
 			exit(EXIT_FAILURE);
 //		GLOBALASSERT("UNKNOWN TEXT FORMAT"==0);
 		case AVPMENUFORMAT_LEFTJUSTIFIED:
@@ -2325,7 +2306,7 @@ int Hardware_RenderSmallMenuText_Coloured(char *textPtr, int x, int y, int alpha
 	{
 		default:
 //		GLOBALASSERT("UNKNOWN TEXT FORMAT"==0);
-			fprintf(stderr, "Hardware_RenderSmallMenuText_Coloured: UNKNOWN TEXT FORMAT\n");
+			log2file("Hardware_RenderSmallMenuText_Coloured: UNKNOWN TEXT FORMAT\n");
 			exit(EXIT_FAILURE);
 		case AVPMENUFORMAT_LEFTJUSTIFIED:
 		{

@@ -739,7 +739,7 @@ static const char* GetGlobalDirectory(const char* argv0)
 		
 		if (tmp == NULL) {
 			/* ... */
-			fprintf(stderr, "GetGlobalDirectory failure\n");
+			log2file("GetGlobalDirectory failure\n");
 			exit(EXIT_FAILURE);
 		}
 
@@ -781,10 +781,10 @@ void InitGameDirectories(char *argv0)
 	
 	/* last chance sanity check */
 	if (!check_game_directory(globaldir)) {
-		fprintf(stderr, "Unable to find the AvP gamedata.\n");
-		fprintf(stderr, "The directory last examined was: %s\n", globaldir);
-		fprintf(stderr, "Has the game been installed and\n");
-		fprintf(stderr, "are all game files lowercase?\n");
+		log2file("Unable to find the AvP gamedata.\n");
+		log2file("The directory last examined was: %s\n", globaldir);
+		log2file("Has the game been installed and\n");
+		log2file("are all game files lowercase?\n");
 		exit(EXIT_FAILURE);
 	}
 
