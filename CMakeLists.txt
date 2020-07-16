@@ -3,13 +3,6 @@
 # CMake 2.8 project
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
-# default to Release
-IF(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-    MESSAGE(STATUS "No build type specified, defaulting to Release")
-    SET(CMAKE_BUILD_TYPE Release CACHE STRING "Build type; one of: Debug Release RelWithDebInfo MinSizeRel" FORCE)
-    SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-ENDIF(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
-
 # default to Desktop build
 IF(NOT AVP_BUILD_TYPE)
     SET(AVP_BUILD_TYPE DESKTOP CACHE STRING "Executable type; one of: DESKTOP WEB" FORCE)
@@ -299,8 +292,8 @@ set(VITA_APP_NAME "Alien vs Predator Gold")
 set(VITA_TITLEID  "AVPGOLD20")
 set(VITA_VERSION  "01.00")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVITA -g -O2 -mfpu=neon -fno-optimize-sibling-calls -ftree-vectorize -fsingle-precision-constant -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -ffast-math -Wno-write-strings")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVITA -g -O2 -mfpu=neon -fno-optimize-sibling-calls -ftree-vectorize -fsingle-precision-constant -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -ffast-math -Wno-write-strings")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVITA -g -O2 -DNDEBUG -mfpu=neon -fno-optimize-sibling-calls -ftree-vectorize -fsingle-precision-constant -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -ffast-math -Wno-write-strings -fno-short-enums")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVITA -g -O2 -DNDEBUG -mfpu=neon -fno-optimize-sibling-calls -ftree-vectorize -fsingle-precision-constant -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -ffast-math -Wno-write-strings -fno-short-enums")
 
 # manually include src/include
 INCLUDE_DIRECTORIES(src/include)
