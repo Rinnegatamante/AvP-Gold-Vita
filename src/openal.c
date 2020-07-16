@@ -197,15 +197,16 @@ int PlatStartSoundSys()
 	attrlist[2] = ALC_SYNC;
 	attrlist[3] = AL_FALSE;
 	attrlist[4] = 0;
-
+	
 	AvpSoundDevice = alcOpenDevice(NULL);
 	if (AvpSoundDevice == NULL) {
+		log2file("No Sound Device\n");
 		return 0;
 	}
 
 	AvpSoundContext = alcCreateContext(AvpSoundDevice, attrlist);
 	if (AvpSoundContext == NULL) {
-		/* TODO: destroy sound device */
+		log2file("No Sound Context\n");
 		return 0;
 	}
 		
@@ -221,7 +222,7 @@ int PlatStartSoundSys()
 	if (alGetError() != AL_NO_ERROR) {
 		// TODO: this shouldn't exit abruptly..
 		// TODO: better error handling throughout
-		fprintf(stderr, "alListenerfv() error = ...\n");
+		log2file("alListenerfv() error = ...\n");
 		exit(1);
 	}
 
@@ -286,7 +287,7 @@ int PlatStartSoundSys()
 void PlatEndSoundSys()
 {
 /* TODO - free everything */
-	fprintf(stderr, "OPENAL: PlatEndSoundSys()\n");
+	log2file("OPENAL: PlatEndSoundSys()\n");
 }
 
 // this table plots the frequency change for
@@ -598,10 +599,10 @@ int PlatPlaySound(int activeIndex)
 
 #ifdef OPENAL_DEBUG		
 		if (ActiveSounds[activeIndex].loop) {
-			fprintf(stderr, "OPENAL: Playing sound %i %s looping in slot %i\n",
+			log2file("OPENAL: Playing sound %i %s looping in slot %i\n",
 				si, GameSounds[si].wavName, activeIndex);
 		} else {
-			fprintf(stderr, "OPENAL: Playing sound %i %s once in slot %i\n",
+			log2file("OPENAL: Playing sound %i %s once in slot %i\n",
 				si, GameSounds[si].wavName, activeIndex);				
 		}
 #endif		
@@ -613,7 +614,7 @@ int PlatPlaySound(int activeIndex)
 void PlatStopSound(int activeIndex)
 {
 #ifdef OPENAL_DEBUG
-	fprintf(stderr, "OPENAL: PlatStopSound(%d)\n", activeIndex);
+	log2file("OPENAL: PlatStopSound(%d)\n", activeIndex);
 #endif	
 	if (!SoundActivated) {
 		return;
@@ -692,7 +693,7 @@ int PlatChangeSoundPitch(int activeIndex, int pitch)
 	frequency = frequency / (float)GameSounds[gsi].dsFrequency;
 	if (frequency > 2.0) {
 #ifdef OPENAL_DEBUG
-	fprintf(stderr, "OPENAL: freq clamp = %f\n", frequency);
+	log2file("OPENAL: freq clamp = %f\n", frequency);
 #endif	
 
 		alSourceStop(ActiveSounds[activeIndex].ds3DBufferP);
@@ -702,13 +703,13 @@ int PlatChangeSoundPitch(int activeIndex, int pitch)
 	alSourcef(ActiveSounds[activeIndex].ds3DBufferP, AL_PITCH, frequency);
 
 #ifdef OPENAL_DEBUG
-	fprintf(stderr, "OPENAL: freq change = %f\n", frequency);
+	log2file("OPENAL: freq change = %f\n", frequency);
 #endif
 
 	ActiveSounds[activeIndex].pitch = pitch;
 
 #ifdef OPENAL_DEBUG	
-	fprintf(stderr, "OPENAL: PlatChangeSoundPitch(%d, %d) = %f\n", activeIndex, pitch, (double)frequency);
+	log2file("OPENAL: PlatChangeSoundPitch(%d, %d) = %f\n", activeIndex, pitch, (double)frequency);
 #endif
 	return 1;
 }
@@ -718,7 +719,7 @@ int PlatSoundHasStopped(int activeIndex)
 	ALint val;
 
 #ifdef OPENAL_DEBUG
-	fprintf(stderr, "PlatSoundHasStopped(%d)\n", activeIndex);
+	log2file("PlatSoundHasStopped(%d)\n", activeIndex);
 #endif
 
 	if (!SoundActivated) {
@@ -807,7 +808,7 @@ int PlatDo3dSound(int activeIndex)
 	}
 
 #ifdef OPENAL_DEBUG	
-	fprintf(stderr, "OPENAL: PlatDo3dSound: idx = %d, volume = %d, distance = %d\n", activeIndex, newVolume, distance);
+	log2file("OPENAL: PlatDo3dSound: idx = %d, volume = %d, distance = %d\n", activeIndex, newVolume, distance);
 #endif
 
 	if (PlatChangeSoundVolume (activeIndex, newVolume) == SOUND_PLATFORMERROR) {
@@ -822,7 +823,7 @@ int PlatDo3dSound(int activeIndex)
 		alSourcefv (ActiveSounds[activeIndex].ds3DBufferP, AL_POSITION, ActiveSounds[activeIndex].PropSetP_pos);
 
 #ifdef OPENAL_DEBUG
-fprintf(stderr, "OPENAL: Sound : (%f, %f, %f) [%d] [%d,%d]\n", ActiveSounds[activeIndex].PropSetP_pos[0], ActiveSounds[activeIndex].PropSetP_pos[1], ActiveSounds[activeIndex].PropSetP_pos[2], activeIndex, ActiveSounds[activeIndex].threedeedata.inner_range, ActiveSounds[activeIndex].threedeedata.outer_range);
+log2file("OPENAL: Sound : (%f, %f, %f) [%d] [%d,%d]\n", ActiveSounds[activeIndex].PropSetP_pos[0], ActiveSounds[activeIndex].PropSetP_pos[1], ActiveSounds[activeIndex].PropSetP_pos[2], activeIndex, ActiveSounds[activeIndex].threedeedata.inner_range, ActiveSounds[activeIndex].threedeedata.outer_range);
 #endif
 
 // No doppler for now.
@@ -890,7 +891,7 @@ void PlatUpdatePlayer()
 		pos[2] = Global_VDB_Ptr->VDB_World.vz; // 10000.0;
 		
 #ifdef OPENAL_DEBUG			
-		fprintf(stderr, "OPENAL: Player: (%f, %f, %f) (%f, %f, %f %f, %f, %f) (%f, %f, %f)\n", pos[0], pos[1], pos[2], or[0], or[1], or[2], or[3], or[4], or[5], vel[0], vel[1], vel[2]);
+		log2file("OPENAL: Player: (%f, %f, %f) (%f, %f, %f %f, %f, %f) (%f, %f, %f)\n", pos[0], pos[1], pos[2], or[0], or[1], or[2], or[3], or[4], or[5], vel[0], vel[1], vel[2]);
 #endif
 
 		pos[0] = 0.0f;
@@ -912,7 +913,7 @@ void PlatUpdatePlayer()
 void PlatSetEnviroment(unsigned int env_index, float reverb_mix)
 {
 #ifdef OPENAL_DEBUG
-	fprintf(stderr, "OPENAL: PlatSetEnvironment(%d, %f)\n", env_index, reverb_mix);
+	log2file("OPENAL: PlatSetEnvironment(%d, %f)\n", env_index, reverb_mix);
 #endif
 
 #if defined( _MSC_VERx )
@@ -991,7 +992,7 @@ void PlatEndGameSound(SOUNDINDEX index)
 unsigned int PlatMaxHWSounds()
 {
 #ifdef OPENAL_DEBUG
-	fprintf(stderr, "OPENAL: PlatMaxHWSounds()\n");
+	log2file("OPENAL: PlatMaxHWSounds()\n");
 #endif	
 	// TODO - need to implement this for real?
 	return 0;
@@ -1002,7 +1003,7 @@ void InitialiseBaseFrequency(SOUNDINDEX soundNum)
 	int frequency;
 
 #ifdef OPENAL_DEBUG	
-	fprintf(stderr, "OPENAL: InitialiseBaseFrequency(%d) [%d] pitch = %d\n", soundNum, GameSounds[soundNum].pitch==PITCH_DEFAULTPLAT, GameSounds[soundNum].pitch);
+	log2file("OPENAL: InitialiseBaseFrequency(%d) [%d] pitch = %d\n", soundNum, GameSounds[soundNum].pitch==PITCH_DEFAULTPLAT, GameSounds[soundNum].pitch);
 #endif
 	if(GameSounds[soundNum].pitch>PITCH_MAXPLAT) GameSounds[soundNum].pitch=PITCH_MAXPLAT;
 	if(GameSounds[soundNum].pitch<PITCH_MINPLAT) GameSounds[soundNum].pitch=PITCH_MINPLAT;
@@ -1013,7 +1014,7 @@ void InitialiseBaseFrequency(SOUNDINDEX soundNum)
 		PITCH_DEFAULTPLAT, GameSounds[soundNum].pitch);
 
 #ifdef OPENAL_DEBUG
-	fprintf(stderr, "OPENAL: old=%d,new=%d\n", GameSounds[soundNum].dsFrequency, frequency);
+	log2file("OPENAL: old=%d,new=%d\n", GameSounds[soundNum].dsFrequency, frequency);
 #endif
 
 	GameSounds[soundNum].dsFrequency = frequency;
@@ -1026,7 +1027,7 @@ void UpdateSoundFrequencies()
 	int i;
 
 #ifdef OPENAL_DEBUG
-	fprintf(stderr, "OPENAL: UpdateSoundFreqncies()\n");
+	log2file("OPENAL: UpdateSoundFreqncies()\n");
 #endif
 
 	if (!SoundActivated) {
@@ -1046,7 +1047,7 @@ void UpdateSoundFrequencies()
 		
 		if (TimeScale != ONE_FIXED) {
 #ifdef OPENAL_DEBUG		
- 			fprintf(stderr, "OPENAL: UpdateSoundFreqncies %d, f = %d\n", i, MUL_FIXED(GameSounds[gameIndex].dsFrequency,TimeScale));
+ 			log2file("OPENAL: UpdateSoundFreqncies %d, f = %d\n", i, MUL_FIXED(GameSounds[gameIndex].dsFrequency,TimeScale));
 #endif 			
 		}
 		
@@ -1062,12 +1063,12 @@ static int LoadWAV( ALvoid* data, ALvoid** bufferPtr, ALushort* format, ALushort
 	DataChunk   dataChunk;
 
 	if( !SimpleLoadWAV( (unsigned char*)data, &fmtChunk, &dataChunk ) ) {
-printf("WAV DEBUG: file didn't parse\n");
+log2file("WAV DEBUG: file didn't parse\n");
 		return 0;
 	}
 	
 	if( fmtChunk.wFormatTag != 1 ) {
-printf("WAV DEBUG: got format tag %d\n", fmtChunk.wFormatTag );
+log2file("WAV DEBUG: got format tag %d\n", fmtChunk.wFormatTag );
 		return 0;
 	}
 	
@@ -1077,7 +1078,7 @@ printf("WAV DEBUG: got format tag %d\n", fmtChunk.wFormatTag );
 		} else if( fmtChunk.wChannels == 2 ) {
 			*format = AL_FORMAT_STEREO8;
 		} else {
-printf("WAV DEBUG: too many channels\n" );
+log2file("WAV DEBUG: too many channels\n" );
 			return 0;
 		}
 	} else if( fmtChunk.wBitsPerSample == 16 ) {
@@ -1086,11 +1087,11 @@ printf("WAV DEBUG: too many channels\n" );
 		} else if( fmtChunk.wChannels == 2 ) {
 			*format = AL_FORMAT_STEREO16;
 		} else {
-printf("WAV DEBUG: too many channels\n" );
+log2file("WAV DEBUG: too many channels\n" );
 			return 0;
 		}
 	} else {
-printf("WAV DEBUG: bad bit setup\n");
+log2file("WAV DEBUG: bad bit setup\n");
 		return 0;
 	}
 
@@ -1113,7 +1114,7 @@ int LoadWavFile(int soundNum, char * wavFileName)
 	const char* wavname;
 	
 #ifdef OPENAL_DEBUG	
-	fprintf(stderr, "LoadWavFile(%d, %s) - sound\n", soundNum, wavFileName);
+	log2file("LoadWavFile(%d, %s) - sound\n", soundNum, wavFileName);
 #endif
 
 	if (!SoundActivated) {
@@ -1175,7 +1176,7 @@ unsigned char *ExtractWavFile(int soundIndex, unsigned char *bufferPtr)
 	size_t slen;
 
 #ifdef OPENAL_DEBUG		
-fprintf(stderr, "OPENAL: ExtractWavFile(%d, %p)\n", soundIndex, bufferPtr); 
+log2file("OPENAL: ExtractWavFile(%d, %p)\n", soundIndex, bufferPtr); 
 #endif
 
 	if (!SoundActivated) {
@@ -1189,7 +1190,7 @@ fprintf(stderr, "OPENAL: ExtractWavFile(%d, %p)\n", soundIndex, bufferPtr);
 	bufferPtr += slen;
 
 #ifdef OPENAL_DEBUG
-fprintf(stderr, "OPENAL: Loaded %s\n", GameSounds[soundIndex].wavName);
+log2file("OPENAL: Loaded %s\n", GameSounds[soundIndex].wavName);
 #endif
 
 	if( LoadWAV( bufferPtr, &udata, &rfmt, &rfreq, &len, &seclen ) ) {
@@ -1218,7 +1219,7 @@ int LoadWavFromFastFile(int soundNum, char * wavFileName)
 	int ok = 0;
 
 #ifdef OPENAL_DEBUG	
-	fprintf(stderr, "OPENAL: LoadWavFromFastFile(%d, %s)\n", soundNum, wavFileName); 
+	log2file("OPENAL: LoadWavFromFastFile(%d, %s)\n", soundNum, wavFileName); 
 #endif
 
 	if ((fp = ffopen (wavFileName, "rb")) != NULL) {
