@@ -591,23 +591,6 @@ static int SetOGLVideoMode(int Width, int Height)
 
 		FullscreenTextureWidth = 640;
 		FullscreenTextureHeight = 480;
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FullscreenTextureWidth, FullscreenTextureHeight, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL);
-
-		maxRenderSize = maxRenderbufferSize;
-		if (maxRenderSize > maxTextureSize) {
-			maxRenderSize = maxTextureSize;
-		}
-		if (maxRenderSize > maxViewportDims) {
-			maxRenderSize = maxViewportDims;
-		}
-
-		if (FramebufferTextureWidth > maxRenderSize) {
-			FramebufferTextureWidth = maxRenderSize;
-		}
-		if (FramebufferTextureHeight > maxRenderSize) {
-			FramebufferTextureHeight = maxRenderSize;
-		}
-		printf("DEBUG3:%d,%d\n", FramebufferTextureWidth, FramebufferTextureHeight);
 		
 		window = 0xDEADBEEF;
 	}
@@ -1162,16 +1145,38 @@ void InGameFlipBuffers()
 
 void FlipBuffers()
 {
-	glViewport(0, 0, 640,480);
+	glViewport(0, 0, 960, 544);
 	glBindTexture(GL_TEXTURE_2D, FullscreenTexture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 640, 480, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, fb_pixels);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FullscreenTextureWidth, FullscreenTextureHeight, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, fb_pixels);
 	
-	GLfloat x0 = -1.0f;
-	GLfloat x1 =  1.0f;
-	GLfloat y0 = -1.0f;
-	GLfloat y1 =  1.0f;
+	GLfloat x0;
+	GLfloat x1;
+	GLfloat y0;
+	GLfloat y1;
+	
+	// figure out the best way to fit the 640x480 virtual window
+	GLfloat a = DrawableHeight * 640.0f / 480.0f;
+	GLfloat b = DrawableWidth * 480.0f / 640.0f;
+
+	if (a <= DrawableWidth) {
+		// a x DrawableHeight window
+		y0 = -1.0f;
+		y1 =  1.0f;
+
+		x1 = 1.0 - (DrawableWidth - a) / DrawableWidth;
+		x0 = -x1;
+	} else {
+		// DrawableWidth x b window
+		x0 = -1.0f;
+		x1 =  1.0f;
+
+		y1 = 1.0 - (DrawableHeight - b) / DrawableHeight;
+		y0 = -y1;
+	}
 
 	GLfloat s0 = 0.0f;
 	GLfloat s1 = 1.0f;
@@ -1184,8 +1189,6 @@ void FlipBuffers()
 	gIndices[3] = 0;
 	gIndices[4] = 2;
 	gIndices[5] = 3;
-
-	SelectProgram(AVP_SHADER_PROGRAM_NO_COLOR_NO_DISCARD);
 	
 	gVertexBuffer[0] = x0;
 	gVertexBuffer[1] = y0;
@@ -1215,8 +1218,11 @@ void FlipBuffers()
 	gVertexBuffer[28] = s0;
 	gVertexBuffer[29] = t0;
 	
-	vglVertexAttribPointerMapped(0, gVertexBuffer);
+	SelectProgram(AVP_SHADER_PROGRAM_NO_COLOR_NO_DISCARD);
+	
 	vglIndexPointerMapped(gIndices);
+	vglVertexAttribPointerMapped(0, gVertexBuffer);
+	
 	vglDrawObjects(GL_TRIANGLES, 6, GL_FALSE);
 	
 	InGameFlipBuffers();
@@ -1320,8 +1326,8 @@ int main(int argc, char *argv[])
 	gIndices = gIndicesPtr;
 	
 	if (InitSDL() == -1) {
-		fprintf(stderr, "Could not find a sutable resolution!\n");
-		fprintf(stderr, "At least 512x384 is needed.  Does OpenGL work?\n");
+		log2file("Could not find a sutable resolution!\n");
+		log2file("At least 512x384 is needed.  Does OpenGL work?\n");
 		exit(EXIT_FAILURE);
 	}
 		
@@ -1561,7 +1567,7 @@ static int MainGame_Update(void) {
 			AvP.GameMode = I_GM_Playing;
 			break;
 		default:
-			fprintf(stderr, "AvP.MainLoopRunning: gamemode = %d\n", AvP.GameMode);
+			log2file("AvP.MainLoopRunning: gamemode = %d\n", AvP.GameMode);
 			exit(EXIT_FAILURE);
 		}
 		
