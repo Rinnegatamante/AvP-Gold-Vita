@@ -62,6 +62,10 @@ extern uint16_t *gIndicesPtr;
 extern float *gVertexBuffer;
 extern float *gVertexBufferPtr;
 uint16_t *fb_pixels = NULL;
+uint16_t *soft_fb[2];
+SceGxmTexture *old_gxm_texture;
+SceGxmTexture *curr_gxm_texture;
+SceGxmTexture gxm_tex_storage;
 
 static void main_loop(void);
 
@@ -452,7 +456,9 @@ int InitSDL()
 		//}
 	}
 	
-	fb_pixels = (uint16_t*)malloc(640*480*2);
+	soft_fb[0] = (uint16_t*)malloc(640*480*2);
+	soft_fb[1] = (uint16_t*)malloc(640*480*2);
+	fb_pixels = soft_fb[0];
 }
 
 	LoadDeviceAndVideoModePreferences();
@@ -581,9 +587,16 @@ static int SetOGLVideoMode(int Width, int Height)
 
 		// create fullscreen window texture
 		glGenTextures(1, &FullscreenTexture);
-
 		glBindTexture(GL_TEXTURE_2D, FullscreenTexture);
-
+		
+		// Hijacking GXM texture for faster access and callbacks skipping
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FullscreenTextureWidth, FullscreenTextureHeight, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, NULL);
+		curr_gxm_texture = vglGetGxmTexture(GL_TEXTURE_2D);
+		vglFree(vglGetTexDataPointer(GL_TEXTURE_2D));
+		sceGxmTextureInitLinear(curr_gxm_texture, soft_fb[0], SCE_GXM_TEXTURE_FORMAT_R5G6B5, 640, 480, 0);
+		sceGxmTextureInitLinear(&gxm_tex_storage, soft_fb[1], SCE_GXM_TEXTURE_FORMAT_R5G6B5, 640, 480, 0);
+		old_gxm_texture = &gxm_tex_storage;
+		
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
@@ -1143,6 +1156,8 @@ void InGameFlipBuffers()
 	gIndices = gIndicesPtr;
 }
 
+int soft_fb_idx = 0;
+
 void FlipBuffers()
 {
 	glViewport(0, 0, 960, 544);
@@ -1151,7 +1166,6 @@ void FlipBuffers()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, FullscreenTextureWidth, FullscreenTextureHeight, 0, GL_RGB, GL_UNSIGNED_SHORT_5_6_5, fb_pixels);
 	
 	GLfloat x0;
 	GLfloat x1;
@@ -1226,6 +1240,13 @@ void FlipBuffers()
 	vglDrawObjects(GL_TRIANGLES, 6, GL_FALSE);
 	
 	InGameFlipBuffers();
+	
+	glFinish();
+	SceGxmTexture *temp = curr_gxm_texture;
+	curr_gxm_texture = old_gxm_texture;
+	old_gxm_texture = temp;
+	soft_fb_idx = (soft_fb_idx + 1) % 2;
+	fb_pixels = soft_fb[soft_fb_idx];
 }
 
 char *AvpCDPath = 0;
