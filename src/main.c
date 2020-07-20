@@ -579,12 +579,6 @@ static int SetOGLVideoMode(int Width, int Height)
 
 		glViewport(0, 0, Width, Height);
 
-		// this should be deleted and rebuilt when the screen size changes
-		GLint maxRenderbufferSize = 4096;
-		GLint maxTextureSize  = 4096;
-		GLint maxViewportDims  = 4096;
-		GLint maxRenderSize  = 4096;
-
 		// create fullscreen window texture
 		glGenTextures(1, &FullscreenTexture);
 		glBindTexture(GL_TEXTURE_2D, FullscreenTexture);
@@ -1041,11 +1035,12 @@ void CheckForWindowsMessages()
 		
 		SDL_JoystickUpdate();
 		
-		numbuttons = SDL_JoystickNumButtons(joy);
-		if (numbuttons > 16) numbuttons = 16;
+		numbuttons = 16;
+		
+		int button_mapping[] = { 1, 2, 0, 3, 0xff, 0xff, 4, 5, 0xff, 0xff, 11, 10, 7, 8, 9, 6 }; 
 		
 		for (x = 0; x < numbuttons; x++) {
-			if (SDL_JoystickGetButton(joy, x)) {
+			if (SDL_JoystickGetButton(joy, button_mapping[x])) {
 				GotAnyKey = 1;
 				if(KEY_JOYSTICK_BUTTON_1+x == KEY_JOYSTICK_BUTTON_12)
 				{
@@ -1167,6 +1162,9 @@ void FlipBuffers()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 	
+	glDisable(GL_BLEND);
+	glDisable(GL_DEPTH_TEST);
+	
 	GLfloat x0;
 	GLfloat x1;
 	GLfloat y0;
@@ -1247,6 +1245,7 @@ void FlipBuffers()
 	old_gxm_texture = temp;
 	soft_fb_idx = (soft_fb_idx + 1) % 2;
 	fb_pixels = soft_fb[soft_fb_idx];
+	memset(fb_pixels, 0, 640*480*2);
 }
 
 char *AvpCDPath = 0;
