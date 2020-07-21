@@ -334,16 +334,10 @@ Global = installdir, where installed data is stored.
 */
 int SetGameDirectories(const char *local, const char *global)
 {
-	struct stat buf;
-	
 	local_dir = strdup(local);
 	global_dir = strdup(global);
-	
-	if (stat(local_dir, &buf) == -1) {
-		printf("Creating local directory %s...\n", local_dir);
 		
-		sceIoMkdir(local_dir, SCE_S_IRWXU);
-	}
+	sceIoMkdir(local_dir, 0777);
 	
 	return 0;
 }
@@ -662,12 +656,12 @@ int CreateGameDirectory(const char *dirname)
 	int ret;
 
 	rfilename = FixFilename(dirname, local_dir, 0);
-	ret = sceIoMkdir(rfilename, SCE_S_IRWXU);
+	ret = sceIoMkdir(rfilename, 0777);
 	free(rfilename);
 	
 	if (ret == -1) {
 		rfilename = FixFilename(dirname, local_dir, 1);
-		ret = sceIoMkdir(rfilename, SCE_S_IRWXU);
+		ret = sceIoMkdir(rfilename, 0777);
 		free(rfilename);
 	}
 	
@@ -901,100 +895,15 @@ void InitGameDirectories(char *argv0)
 	extern char *SecondTex_Directory;
 	extern char *SecondSoundDir;
 	
-	char tmppath[PATH_MAX];
-	char *homedir, *gamedir, *localdir, *tmp;
+	char *gamedir, *localdir;
 	char *path;
-	size_t len, copylen;
 	
 	SecondTex_Directory = "graphics/";
 	SecondSoundDir = "sound/";
 
-	homedir = getenv("HOME");
-	if (homedir == NULL)
-		homedir = "ux0:data/AvP";
-	localdir = (char *)malloc(strlen(homedir)+10);
-	strcpy(localdir, homedir);
-	strcat(localdir, "/");
-	strcat(localdir, ".avp");
-	
-	tmp = NULL;
-	
-	/*
-	1. $AVP_DATA overrides all
-	2. executable path from argv[0]
-	3. realpath of executable path from argv[0]
-	4. $PATH
-	5. current directory
-	*/
-	
-	/* 1. $AVP_DATA */
-	gamedir = getenv("AVP_DATA");
-	
-	/* $AVP_DATA overrides all, so no check */
-	
-	if (gamedir == NULL) {
-		/* 2. executable path from argv[0] */
-		tmp = strdup(argv0);
-		
-		if (tmp == NULL) {
-			/* ... */
-			log2file("InitGameDirectories failure\n");
-			exit(EXIT_FAILURE);
-		}
-
-		gamedir = strrchr(tmp, '/');
-
-		if (gamedir) {
-			*gamedir = 0;
-			gamedir = tmp;
-		
-			if (!check_game_directory(gamedir)) {
-				gamedir = NULL;
-			}
-		}
-	}
-	
-	if (gamedir == NULL) {
-		/* 3. realpath of executable path from argv[0] */
-		
-		assert(tmp != NULL);
-
-		gamedir = realpath(tmp, tmppath);
-
-		if (!check_game_directory(gamedir)) {
-			gamedir = NULL;
-		}
-	}
-
-	if (gamedir == NULL) {
-		/* 4. $PATH */
-		path = getenv("PATH");
-		if (path) {
-			while (*path) {
-				len = strcspn(path, ":");
-				
-				copylen = min(len, PATH_MAX-1);
-				
-				strncpy(tmppath, path, copylen);
-				tmppath[copylen] = 0;
-				
-				if (check_game_directory(tmppath)) {
-					gamedir = tmppath;
-					break;
-				}
-				
-				path += len;
-				path += strspn(path, ":");
-			}
-		}
-	}
-	
-	if (gamedir == NULL) {
-		/* 5. current directory */
-		gamedir = "ux0:data/AvP";
-	}
-	
-	assert(gamedir != NULL);
+	localdir = (char *)malloc(64);
+	sprintf(localdir, "ux0:data/AvP/.avp");
+	gamedir = "ux0:data/AvP";
 	
 	/* last chance sanity check */
 	if (!check_game_directory(gamedir)) {
@@ -1008,9 +917,6 @@ void InitGameDirectories(char *argv0)
 	SetGameDirectories(localdir, gamedir);
 	
 	free(localdir);
-	if (tmp) {
-		free(tmp);
-	}
 	
 	/* delete some log files */
 	DeleteGameFile("dx_error.log");

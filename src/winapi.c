@@ -147,7 +147,7 @@ int CreateDirectory(char *dir, int lpSecurityAttributes)
 
 	log2file("CreateDirectory(%s, %d)\n", dir, lpSecurityAttributes);
 
-	if (sceIoMkdir(dir, SCE_S_IRWXU) == -1)
+	if (sceIoMkdir(dir, 0777) == -1)
 		return 0;
 	else
 		return 1;
