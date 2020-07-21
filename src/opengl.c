@@ -746,8 +746,7 @@ GLuint CreateOGLTexture(D3DTexture *tex, unsigned char *buf)
 
 	if (!tex->IsNpot && TextureMinFilter != GL_LINEAR) {
 		// generate mipmaps if needed
-		// OpenGL 3.0 / ES 2 feature -- need fbo extension support
-		//glGenerateMipmap(GL_TEXTURE_2D);
+		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 
     tex->buf = NULL;
