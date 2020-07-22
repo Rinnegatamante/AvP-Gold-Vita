@@ -74,7 +74,7 @@ GLuint DefaultTexture;
 
 static enum TRANSLUCENCY_TYPE CurrentTranslucencyMode = TRANSLUCENCY_OFF;
 static enum FILTERING_MODE_ID CurrentFilteringMode = FILTERING_BILINEAR_OFF;
-static GLenum TextureMinFilter = GL_LINEAR; //GL_LINEAR_MIPMAP_LINEAR;
+static GLenum TextureMinFilter = GL_NEAREST_MIPMAP_LINEAR;
 static D3DTexture *CurrentlyBoundTexture = NULL;
 
 #if defined(_MSC_VER)
