@@ -288,7 +288,7 @@ INCLUDE_DIRECTORIES(${include})
 
 include("${VITASDK}/share/vita.cmake" REQUIRED)
 message("PSVita Release Build..")
-set(VITA_APP_NAME "Alien vs Predator Gold")
+set(VITA_APP_NAME "Aliens vs Predator Gold")
 set(VITA_TITLEID  "AVPGOLD20")
 set(VITA_VERSION  "01.00")
 
