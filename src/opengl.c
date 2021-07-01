@@ -24,6 +24,17 @@
 #include "aw.h"
 #include "opengl.h"
 
+#include "shaders/default_f.h"
+#include "shaders/default_v.h"
+#include "shaders/no_color_no_discard_f.h"
+#include "shaders/no_color_v.h"
+#include "shaders/no_discard_f.h"
+#include "shaders/no_secondary_f.h"
+#include "shaders/no_secondary_v.h"
+#include "shaders/no_secondary_no_discard_f.h"
+#include "shaders/no_texture_f.h"
+#include "shaders/no_texture_v.h"
+
 void log2file(const char *format, ...) {
 	__gnuc_va_list arg;
 	int done;
@@ -149,134 +160,6 @@ static void SetTranslucencyMode(enum TRANSLUCENCY_TYPE mode)
 	}
 }
 
-static const char AVP_VERTEX_SHADER_SOURCE[] =
-	"void main(\n"
-	"	float4 aVertex,\n"
-	"	float2 aTexCoord,\n"
-	"	float4 aColor0,\n"
-	"	float4 aColor1,\n"
-	"	float2 out vTexCoord : TEXCOORD0,\n"
-	"	float4 out vColor0 : COLOR0,\n"
-	"	float4 out vColor1 : COLOR1,\n"
-	"	float4 out vPosition : POSITION)\n"
-	"{\n"
-	"	vPosition = aVertex;\n"
-	"	vTexCoord = aTexCoord;\n"
-	"	vColor0 = aColor0;\n"
-	"	vColor1 = aColor1;\n"
-	"}\n"
-	;
-
-static const char AVP_VERTEX_SHADER_SOURCE_NO_SECONDARY[] =
-	"void main(\n"
-	"	float4 aVertex,\n"
-	"	float2 aTexCoord,\n"
-	"	float4 aColor0,\n"
-	"	float2 out vTexCoord : TEXCOORD0,\n"
-	"	float4 out vColor0 : COLOR0,\n"
-	"	float4 out vPosition : POSITION)\n"
-	"{\n"
-	"	vPosition = aVertex;\n"
-	"	vTexCoord = aTexCoord;\n"
-	"	vColor0 = aColor0;\n"
-	"}\n"
-	;
-
-static const char AVP_VERTEX_SHADER_SOURCE_NO_TEXTURE[] =
-	"void main(\n"
-	"	float4 aVertex,\n"
-	"	float4 aColor0,\n"
-	"	float4 out vColor0 : COLOR0,\n"
-	"	float4 out vPosition : POSITION)\n"
-	"{\n"
-	"	vPosition = aVertex;\n"
-	"	vColor0 = aColor0;\n"
-	"}\n"
-	;
-
-static const char AVP_VERTEX_SHADER_SOURCE_NO_COLOR[] =
-	"void main(\n"
-	"	float4 aVertex,\n"
-	"	float2 aTexCoord,\n"
-	"	float2 out vTexCoord : TEXCOORD0,\n"
-	"	float4 out vPosition : POSITION)\n"
-	"{\n"
-	"	vPosition = aVertex;\n"
-	"	vTexCoord = aTexCoord;\n"
-	"}\n"
-	;
-
-static const char AVP_FRAGMENT_SHADER_SOURCE[] =
-	"void main(\n"
-	"	float2 vTexCoord : TEXCOORD0,\n"
-	"	float4 vColor0 : COLOR0,\n"
-	"	float4 vColor1 : COLOR1,\n"
-	"	uniform sampler2D uTexture : TEXUNIT0,\n"
-	"	float4 out frag_clr : COLOR)\n"
-	"{\n"
-	"	float4 t = tex2D(uTexture, vTexCoord);\n"
-	"	if (t.a == 0.0) discard;\n"
-	"	frag_clr = t * vColor0 + vColor1;\n"
-	"}\n"
-	;
-
-static const char AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY[] =
-	"void main(\n"
-	"	float2 vTexCoord : TEXCOORD0,\n"
-	"	float4 vColor0 : COLOR0,\n"
-	"	uniform sampler2D uTexture : TEXUNIT0,\n"
-	"	float4 out frag_clr : COLOR)\n"
-	"{\n"
-	"	float4 t = tex2D(uTexture, vTexCoord);\n"
-	"	if (t.a == 0.0) discard;\n"
-	"	frag_clr = t * vColor0;\n"
-	"}\n"
-	;
-
-static const char AVP_FRAGMENT_SHADER_SOURCE_NO_TEXTURE[] =
-	"void main(\n"
-	"	float4 vColor0 : COLOR0,\n"
-	"	float4 out frag_clr : COLOR)\n"
-	"{\n"
-	"	frag_clr = vColor0;\n"
-	"}\n"
-	;
-
-static const char AVP_FRAGMENT_SHADER_SOURCE_NO_DISCARD[] =
-	"void main(\n"
-	"	float2 vTexCoord : TEXCOORD0,\n"
-	"	float4 vColor0 : COLOR0,\n"
-	"	float4 vColor1 : COLOR1,\n"
-	"	uniform sampler2D uTexture : TEXUNIT0,\n"
-	"	float4 out frag_clr : COLOR)\n"
-	"{\n"
-	"	float4 t = tex2D(uTexture, vTexCoord);\n"
-	"	frag_clr = t * vColor0 + vColor1;\n"
-	"}\n"
-	;
-
-static const char AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY_NO_DISCARD[] =
-	"void main(\n"
-	"	float2 vTexCoord : TEXCOORD0,\n"
-	"	float4 vColor0 : COLOR0,\n"
-	"	uniform sampler2D uTexture : TEXUNIT0,\n"
-	"	float4 out frag_clr : COLOR)\n"
-	"{\n"
-	"	float4 t = tex2D(uTexture, vTexCoord);\n"
-	"	frag_clr = t * vColor0;\n"
-	"}\n"
-	;
-
-static const char AVP_FRAGMENT_SHADER_SOURCE_NO_COLOR_NO_DISCARD[] =
-	"void main(\n"
-	"	float2 vTexCoord : TEXCOORD0,\n"
-	"	uniform sampler2D uTexture : TEXUNIT0,\n"
-	"	float4 out frag_clr : COLOR)\n"
-	"{\n"
-	"	frag_clr = tex2D(uTexture, vTexCoord);\n"
-	"}\n"
-	;
-
 enum AVP_VERTEX_SHADER {
 	AVP_VERTEX_SHADER_DEFAULT,
 	AVP_VERTEX_SHADER_NO_TEXTURE,
@@ -295,20 +178,25 @@ enum AVP_FRAGMENT_SHADER {
 	AVP_FRAGMENT_SHADER_MAX
 };
 
-static const char* const AvpVertexShaderSources[AVP_VERTEX_SHADER_MAX] = {
-	AVP_VERTEX_SHADER_SOURCE,
-	AVP_VERTEX_SHADER_SOURCE_NO_TEXTURE,
-	AVP_VERTEX_SHADER_SOURCE_NO_SECONDARY,
-	AVP_VERTEX_SHADER_SOURCE_NO_COLOR
+typedef struct {
+	char *bin;
+	uint32_t size;
+} shader_bin;
+
+static shader_bin AvpVertexShader[AVP_VERTEX_SHADER_MAX] = {
+	{default_v, size_default_v},
+	{no_texture_v, size_no_texture_v},
+	{no_secondary_v, size_no_secondary_v},
+	{no_color_v, size_no_color_v}
 };
 
-static const char* AvpFragmentShaderSources[AVP_FRAGMENT_SHADER_MAX] = {
-	AVP_FRAGMENT_SHADER_SOURCE,
-	AVP_FRAGMENT_SHADER_SOURCE_NO_TEXTURE,
-	AVP_FRAGMENT_SHADER_SOURCE_NO_DISCARD,
-	AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY,
-	AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY_NO_DISCARD,
-	AVP_FRAGMENT_SHADER_SOURCE_NO_COLOR_NO_DISCARD
+static shader_bin AvpFragmentShader[AVP_FRAGMENT_SHADER_MAX] = {
+	{default_f, size_default_f},
+	{no_texture_f, size_no_texture_f},
+	{no_discard_f, size_no_discard_f},
+	{no_secondary_f, size_no_secondary_f},
+	{no_secondary_no_discard_f, size_no_secondary_no_discard_f},
+	{no_color_no_discard_f, size_no_color_no_discard_f}
 };
 
 struct AvpShaderProgramSource {
@@ -365,19 +253,6 @@ static struct AvpVertexShader AvpVertexShaders[AVP_FRAGMENT_SHADER_MAX];
 static struct AvpFragmentShader AvpFragmentShaders[AVP_FRAGMENT_SHADER_MAX];
 static struct AvpShaderProgram AvpShaderPrograms[AVP_SHADER_PROGRAM_MAX];
 
-static int CompileShader(GLuint shader, const GLchar* shaderSource) {
-	GLint infoLogLength;
-	GLchar* infoLog;
-	GLint compileStatus;
-	
-	int size = strlen(shaderSource) - 1;
-	glShaderSource(shader, 1, &shaderSource, &size);
-	glCompileShader(shader);
-
-	glGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
-	return compileStatus;
-}
-
 static int LinkProgram(GLuint program) {
 	glLinkProgram(program);
 
@@ -419,13 +294,7 @@ static int InitOpenGLPrograms(void) {
 		GLuint vertexShader;
 
 		vertexShader = glCreateShader(GL_VERTEX_SHADER);
-
-		status = CompileShader(vertexShader, AvpVertexShaderSources[i]);
-
-		if (status == GL_FALSE) {
-			log2file("vertex shader compilation failed\n");
-			return GL_FALSE;
-		}
+		glShaderBinary(1, &vertexShader, 0, AvpVertexShader[i].bin, AvpVertexShader[i].size);
 
 		AvpVertexShaders[i].shaderObj = vertexShader;
 	}
@@ -434,13 +303,7 @@ static int InitOpenGLPrograms(void) {
 		GLuint fragmentShader;
 
 		fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-
-		status = CompileShader(fragmentShader, AvpFragmentShaderSources[i]);
-
-		if (status == GL_FALSE) {
-			log2file("fragment shader n.%d compilation failed\n", i);
-			return GL_FALSE;
-		}
+		glShaderBinary(1, &fragmentShader, 0, AvpFragmentShader[i].bin, AvpFragmentShader[i].size);
 
 		AvpFragmentShaders[i].shaderObj = fragmentShader;
 	}
@@ -516,8 +379,8 @@ void InitOpenGL(int firsttime)
 static void FlushTriangleBuffers(int backup)
 {
 	if (tarrc) {
-		memcpy_neon(gVertexBuffer, varr, varrc * sizeof(varr[0]));
-		memcpy_neon(gIndices, tarr, tarrc * sizeof(tarr[0]));
+		sceClibMemcpy(gVertexBuffer, varr, varrc * sizeof(varr[0]));
+		sceClibMemcpy(gIndices, tarr, tarrc * sizeof(tarr[0]));
 		
 		vglIndexPointerMapped(gIndices);
 		vglVertexAttribPointerMapped(0, gVertexBuffer);

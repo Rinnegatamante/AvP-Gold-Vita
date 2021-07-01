@@ -1,0 +1,10 @@
+void main(
+	float2 vTexCoord : TEXCOORD0,
+	float4 vColor0 : COLOR0,
+	float4 vColor1 : COLOR1,
+	uniform sampler2D uTexture : TEXUNIT0,
+	float4 out frag_clr : COLOR)
+{
+	float4 t = tex2D(uTexture, vTexCoord);
+	frag_clr = t * vColor0 + vColor1;
+}

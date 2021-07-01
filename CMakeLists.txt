@@ -324,6 +324,7 @@ IF(NOT AVP_WEB)
 		SceHid_stub
 		SceAppMgr_stub
 		SceCommonDialog_stub
+		SceMotion_stub
 		SceShaccCg_stub
 		SDL2
 		vitaGL

@@ -57,6 +57,8 @@
 #define USE_OPENGL_ES 1
 #endif
 
+#include <vitasdk.h>
+
 extern uint16_t *gIndices;
 extern uint16_t *gIndicesPtr;
 extern float *gVertexBuffer;
@@ -1145,8 +1147,7 @@ void InGameFlipBuffers()
 {
 	glViewport(0, 0, 960, 544);
 	
-	vglStopRendering();
-	vglStartRendering();
+	vglSwapBuffers(GL_FALSE);
 	gVertexBuffer = gVertexBufferPtr;
 	gIndices = gIndicesPtr;
 }
@@ -1336,9 +1337,9 @@ int main(int argc, char *argv[])
 	scePowerSetBusClockFrequency(222);
 	scePowerSetGpuClockFrequency(222);
 	scePowerSetGpuXbarClockFrequency(166);
-	vglInitExtended(0x100000, 960, 544, 0x100000, SCE_GXM_MULTISAMPLE_4X);
+	vglEnableRuntimeShaderCompiler(GL_FALSE);
+	vglInitExtended(0, 960, 544, 0x100000, SCE_GXM_MULTISAMPLE_4X);
 	vglUseVram(GL_TRUE);
-	vglStartRendering();
 		
 	gVertexBufferPtr = (float*)malloc(0x1800000);
 	gIndicesPtr = (uint16_t*)malloc(0x600000);

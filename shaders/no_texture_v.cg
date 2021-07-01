@@ -1,0 +1,9 @@
+void main(
+	float4 aVertex,
+	float4 aColor0,
+	float4 out vColor0 : COLOR0,
+	float4 out vPosition : POSITION)
+{
+	vPosition = aVertex;
+	vColor0 = aColor0;
+}
