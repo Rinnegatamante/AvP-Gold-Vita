@@ -1359,7 +1359,7 @@ void ReadPlayerGameInput(STRATEGYBLOCK* sbPtr)
 		int xAxis = (JoystickData.dwXpos-32768)*2;
 		int y2Axis = 0;
 		int x2Axis = 0;
-
+#if 0
 		if(JoystickData.dw2Ypos || JoystickData.dw2Xpos){
 			y2Axis = (32768-JoystickData.dw2Ypos)*2;
 			x2Axis = (JoystickData.dw2Xpos-32768)*2;
@@ -1395,7 +1395,7 @@ void ReadPlayerGameInput(STRATEGYBLOCK* sbPtr)
                 }
             }
 		}
-		
+#endif		
 		if(JoystickControlMethods.JoystickVAxisIsMovement)
 		{
 			if(JoystickControlMethods.JoystickFlipVerticalAxis) yAxis=-yAxis;
