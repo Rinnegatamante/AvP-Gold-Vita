@@ -82,7 +82,6 @@ size_t _mbclen(const unsigned char *s);
 
 #define RGBA_MAKE(r, g, b, a)   ((((a) << 24) | ((r) << 16) | ((g) << 8) | (b)))
 
-#define PATH_MAX    256
 #define MAX_PATH	PATH_MAX
 
 typedef int GUID;

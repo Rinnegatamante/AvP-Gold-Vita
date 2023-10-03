@@ -12,6 +12,7 @@
 #include "libavformat/avformat.h"
 #include "libavutil/avutil.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/frame.h"
 #include "libswscale/swscale.h"
 
 
@@ -20,7 +21,7 @@
 //#define DISABLE_FMVS
 
 extern void SDL_Delay(); 
-extern uint SDL_GetTicks();
+extern unsigned int SDL_GetTicks();
 extern int SoundSys_IsOn();
 extern void DrawAvpMenuBink(char* buf, int width, int height, int pitch);
 extern float PlatVolumeToGain(int volume);
@@ -33,6 +34,43 @@ extern float PlatVolumeToGain(int volume);
 
 static BOOL binkInitialized = FALSE;
 
+// vcpkg forces newer ffmpeg that lacks AVPicture struct
+#ifdef _MSC_VER
+typedef struct AVPicture {
+	uint8_t * data[AV_NUM_DATA_POINTERS];    ///< pointers to the image data planes
+	int linesize[AV_NUM_DATA_POINTERS];     ///< number of bytes per line
+} AVPicture;
+
+int avpicture_fill(AVPicture* picture, const uint8_t* ptr, enum AVPixelFormat pix_fmt, int width, int height) {
+	return av_image_fill_arrays(picture->data, picture->linesize, ptr, pix_fmt, width, height, 1);
+}
+
+int avpicture_layout(const AVPicture * src, enum AVPixelFormat pix_fmt, int width, int height, unsigned char* dest, int dest_size) {
+	return av_image_copy_to_buffer(dest, dest_size, (const uint8_t* const*)src->data, src->linesize, pix_fmt, width, height, 1);
+}
+
+int avpicture_get_size(enum AVPixelFormat pix_fmt, int width, int height) {
+	return av_image_get_buffer_size(pix_fmt, width, height, 1);
+}
+
+int avpicture_alloc(AVPicture * picture, enum AVPixelFormat pix_fmt, int width, int height) {
+	int ret = av_image_alloc(picture->data, picture->linesize, width, height, pix_fmt, 1);
+	if (ret < 0) {
+		memset(picture, 0, sizeof(AVPicture));
+		return ret;
+	}
+	return 0;
+}
+
+void avpicture_free(AVPicture * picture) {
+	av_freep(&picture->data[0]);
+}
+
+void av_picture_copy(AVPicture * dst, const AVPicture * src, enum AVPixelFormat pix_fmt, int width, int height) {
+	av_image_copy(dst->data, dst->linesize, (const uint8_t**)src->data, src->linesize, pix_fmt, width, height);
+}
+#endif
+
 struct binkMovie
 {
 	AVFormatContext*	avContext;
@@ -43,9 +81,9 @@ struct binkMovie
 	AVFrame* 			videoFrame;
 	struct SwsContext*	videoScaleContext;
 	AVPicture			videoScalePicture;
-	uint				videoScaleWidth;
-	uint				videoScaleHeight;
-	uint				videoScaleFormat;
+	unsigned int				videoScaleWidth;
+	unsigned int				videoScaleHeight;
+	unsigned int				videoScaleFormat;
 	float				videoFrameRate;
 	
 	int					audioStreamIndex;
@@ -63,7 +101,7 @@ struct binkMovie
 	ALenum				alFormat;
 	ALuint				alSampleRate;
 
-	uint				timeLastUpdate;
+	unsigned int				timeLastUpdate;
 	
 	BOOL				looping;
 	BOOL				isfmv;
@@ -139,7 +177,7 @@ int BinkStartMovie(struct binkMovie* aMovie, const char* aFilename, BOOL aLoopFl
 	int numStreams = 0;
 	for(int i=0; i<aMovie->avContext->nb_streams; i++)
 	{
-		AVCodecContext* codec_context = aMovie->avContext->streams[i]->codec;
+		AVCodecContext* codec_context = aMovie->avContext->streams[i]->codecpar;
 		AVCodec* codec = avcodec_find_decoder(codec_context->codec_id);
 		if(codec)
 		{
@@ -193,7 +231,22 @@ int BinkDecodeFrameInternal(struct binkMovie* aMovie, AVPacket* aPacket)
 	if(aPacket->stream_index == aMovie->videoStreamIndex)
 	{
 		int decoded_frame_ready = 0;
+#ifdef _MSC_VER
+		int len;
+		if (aMovie->videoCodecContext->codec_type == AVMEDIA_TYPE_VIDEO || aMovie->videoCodecContext->codec_type == AVMEDIA_TYPE_AUDIO) {
+			len = avcodec_send_packet(aMovie->videoCodecContext, aPacket);
+			if (len < 0 && len != AVERROR(EAGAIN) && len != AVERROR_EOF) {
+			} else {
+				if (len >= 0)
+					aPacket->size = 0;
+				len = avcodec_receive_frame(aMovie->videoCodecContext, aMovie->videoFrame);
+				if (len >= 0)
+					decoded_frame_ready = 1;
+			}
+		}
+#else
 		int len = avcodec_decode_video2(aMovie->videoCodecContext, aMovie->videoFrame, &decoded_frame_ready, aPacket);
+#endif
 		if(len<0)
 			return aMovie->looping;
 			
@@ -229,11 +282,25 @@ int BinkDecodeFrameInternal(struct binkMovie* aMovie, AVPacket* aPacket)
 		int decoded_frame_ready = 0;
 		av_frame_unref(aMovie->audioFrame);
 		//avcodec_get_frame_defaults(aMovie->audioFrame);
-		
+#ifdef _MSC_VER
+		int len = avcodec_receive_frame(aMovie->audioCodecContext, aMovie->audioFrame);
+		if (len == 0)
+			decoded_frame_ready = 1;
+		if (len == AVERROR(EAGAIN))
+			len = 0;
+		if (len == 0)
+			len = avcodec_send_packet(aMovie->audioCodecContext, aPacket);
+		if (len == AVERROR(EAGAIN))
+			len = 0;
+#else
 		int len = avcodec_decode_audio4(aMovie->audioCodecContext, aMovie->audioFrame, &decoded_frame_ready, aPacket);
-		if(len<0)
+#endif
+		if (len < 0)
 			return aMovie->looping;
-		
+#ifdef _MSC_VER
+		else
+			len = aPacket->size;
+#endif
 		if(!SoundSys_IsOn())
 			return 0;
 
@@ -313,7 +380,7 @@ int BinkDecodeFrameInternal(struct binkMovie* aMovie, AVPacket* aPacket)
 
 
 			// 16bit is deafult
-			uint dataSize = sampleCount*2;
+			unsigned int dataSize = sampleCount*2;
 			void* data = (void*) aMovie->audioFrame->extended_data[0];
 
 			switch(aMovie->audioFrame->format)
@@ -431,7 +498,7 @@ int BinkUpdateMovie(struct binkMovie* aMovie)
 	if(!aMovie->avContext)
 		return 0;
 
-	uint timeNow = SDL_GetTicks();
+	unsigned int timeNow = SDL_GetTicks();
 	float delta = ((float)(timeNow - aMovie->timeLastUpdate)) / 1000.0f;
 	
 	
@@ -471,9 +538,9 @@ BOOL BinkSys_Init()
 {
 	if(binkInitialized)
 		return TRUE;
-
+#ifndef _MSC_VER
 	av_register_all();
-	
+#endif	
 	binkInitialized = TRUE;	
 	return binkInitialized;
 }

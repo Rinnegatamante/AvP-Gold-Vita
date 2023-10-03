@@ -22,8 +22,7 @@
 
 char AAFontWidths[256];
 
-extern uint8_t *fb_pixels;
-
+extern SDL_Surface *surface;
 extern SCREENDESCRIPTORBLOCK ScreenDescriptorBlock;
 
 extern int CloudTable[128][128];
@@ -133,11 +132,17 @@ static void DrawAvPMenuGlowyBar(int topleftX, int topleftY, int alpha, int lengt
 	}
 	if (length<0) length = 0;
 	
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
+	
 	if (alpha>ONE_FIXED) {
 		int x, y;
 		
 		for (y=topleftY; y<gfxPtr->Height+topleftY; y++) {
-			destPtr = (unsigned short *)(((unsigned char *)fb_pixels) + y*1280) + topleftX;
+			destPtr = (unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch) + topleftX;
 			
 			for (x=0; x<length; x++) {
 				*destPtr =	((srcPtr[0]>>3)<<11) |
@@ -152,7 +157,7 @@ static void DrawAvPMenuGlowyBar(int topleftX, int topleftY, int alpha, int lengt
 		int x, y;
 		
 		for (y=topleftY; y<gfxPtr->Height+topleftY; y++) {
-			destPtr = ((unsigned short *)(((unsigned char *)fb_pixels) + y*1280)) + topleftX;
+			destPtr = ((unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch)) + topleftX;
 			
 			for (x=0; x<length; x++) {
 				if (srcPtr[0] || srcPtr[1] || srcPtr[2]) {
@@ -180,7 +185,10 @@ static void DrawAvPMenuGlowyBar(int topleftX, int topleftY, int alpha, int lengt
 			srcPtr += image->w * 4;
 		}
 	}
-
+		
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 }
 
 static void DrawAvPMenuGlowyBar_Clipped(int topleftX, int topleftY, int alpha, int length, int topY, int bottomY)
@@ -197,13 +205,18 @@ static void DrawAvPMenuGlowyBar_Clipped(int topleftX, int topleftY, int alpha, i
 	
 	if (length<0) length = 0;
 	
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
 	
 	if (alpha>ONE_FIXED) {
 		int x, y;
 		
 		for (y=topleftY; y<gfxPtr->Height+topleftY; y++) {
 			if(y>=topY && y<=bottomY) {
-				destPtr = (unsigned short *)(((unsigned char *)fb_pixels) + y*1280) + topleftX;
+				destPtr = (unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch) + topleftX;
 			
 				for (x=0; x<length; x++) {
 					*destPtr =	((srcPtr[0]>>3)<<11) |
@@ -219,7 +232,7 @@ static void DrawAvPMenuGlowyBar_Clipped(int topleftX, int topleftY, int alpha, i
 		
 		for (y=topleftY; y<gfxPtr->Height+topleftY; y++) {
 			if(y>=topY && y<=bottomY) {
-				destPtr = ((unsigned short *)(((unsigned char *)fb_pixels) + y*1280)) + topleftX;
+				destPtr = ((unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch)) + topleftX;
 			
 				for (x=0; x<length; x++) {				
 					if (srcPtr[0] || srcPtr[1] || srcPtr[2]) {
@@ -247,7 +260,10 @@ static void DrawAvPMenuGlowyBar_Clipped(int topleftX, int topleftY, int alpha, i
 			srcPtr += image->w * 4;
 		}
 	}
-
+		
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 }
 
 typedef struct AVPIndexedFont
@@ -311,8 +327,8 @@ static void LoadMenuFont()
 	int c;
 	
 	if ((image->w != 30) || ((image->h % 33) != 0)) {
-		log2file("ERROR: I am going to give up now, because I don't like your font!\n");
-		log2file("Font Size: %d x %d\n", image->w, image->h);
+		fprintf(stderr, "ERROR: I am going to give up now, because I don't like your font!\n");
+		fprintf(stderr, "Font Size: %d x %d\n", image->w, image->h);
 		exit(EXIT_FAILURE);
 	}
 	
@@ -416,7 +432,12 @@ int RenderMenuText(const char *textPtr, int sx, int sy, int alpha, enum AVPMENUF
 	gfxPtr = &IntroFont_Light.info;
 	image = gfxPtr->ImagePtr;
 	
-
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return 0; /* ... */
+		}
+	}
+	
 	while( *textPtr ) {
 		char c = *textPtr++;
 
@@ -437,7 +458,7 @@ int RenderMenuText(const char *textPtr, int sx, int sy, int alpha, enum AVPMENUF
 			srcPtr = &image->buf[(topLeftU+topLeftV*image->w)*4];
 
 			for (y=sy; y<33+sy; y++) {
-				destPtr = (unsigned short *)(((unsigned char *)fb_pixels)+y*1280) + sx;
+				destPtr = (unsigned short *)(((unsigned char *)surface->pixels)+y*surface->pitch) + sx;
 				
 				for (x=stride; x>0; x--) {
 					if (srcPtr[0] || srcPtr[1] || srcPtr[2]) {
@@ -470,7 +491,9 @@ int RenderMenuText(const char *textPtr, int sx, int sy, int alpha, enum AVPMENUF
 		}
 	}
 
-
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 	
 	return sx;
 }
@@ -514,7 +537,12 @@ int RenderMenuText_Clipped(char *textPtr, int sx, int sy, int alpha, enum AVPMEN
 	gfxPtr = &IntroFont_Light.info;
 	image = gfxPtr->ImagePtr;
 	
-
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return 0; /* ... */
+		}
+	}
+	
 	while( *textPtr ) {
 		char c = *textPtr++;
 
@@ -536,7 +564,7 @@ int RenderMenuText_Clipped(char *textPtr, int sx, int sy, int alpha, enum AVPMEN
 
 			for (y=sy; y<33+sy; y++) {
 				if(y>=topY && y<=bottomY) {
-					destPtr = (unsigned short *)(((unsigned char *)fb_pixels)+y*1280) + sx;
+					destPtr = (unsigned short *)(((unsigned char *)surface->pixels)+y*surface->pitch) + sx;
 				
 					for (x=stride; x>0; x--) {
 						if (srcPtr[0] || srcPtr[1] || srcPtr[2]) {
@@ -572,7 +600,9 @@ int RenderMenuText_Clipped(char *textPtr, int sx, int sy, int alpha, enum AVPMEN
 		}
 	}
 
-
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 	
 	return sx;
 }
@@ -592,7 +622,12 @@ static int RenderSmallFontString(char *textPtr,int sx,int sy,int alpha, int red,
 	gfxPtr = &AvPMenuGfxStorage[AVPMENUGFX_SMALL_FONT];
 	image = gfxPtr->ImagePtr;
 	
-
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return 0; /* ... */
+		}
+	}
+	
 	while( *textPtr ) {
 		char c = *textPtr++;
 
@@ -604,7 +639,7 @@ static int RenderSmallFontString(char *textPtr,int sx,int sy,int alpha, int red,
 			srcPtr = &image->buf[(topLeftU+topLeftV*image->w)*4];
 			
 			for (y=sy; y<HUD_FONT_HEIGHT+sy; y++) {
-				destPtr = (unsigned short *)(((unsigned char *)fb_pixels)+y*1280) + sx;
+				destPtr = (unsigned short *)(((unsigned char *)surface->pixels)+y*surface->pitch) + sx;
 				
 				for (x=0; x<HUD_FONT_WIDTH; x++) {
 					if (srcPtr[0] || srcPtr[1] || srcPtr[2]) {
@@ -634,7 +669,9 @@ static int RenderSmallFontString(char *textPtr,int sx,int sy,int alpha, int red,
 		}
 	}
 
-
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 	
 	return sx;
 }
@@ -714,6 +751,11 @@ Determine area used by text , so we can draw it centrally
 	}
 }
 
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
 	
 	while ( *textPtr ) {
 		const char* textPtr2=textPtr;
@@ -779,7 +821,7 @@ Determine area used by text , so we can draw it centrally
 				srcPtr = &image->buf[(topLeftU+topLeftV*image->w)*4];
 				
 				for (y=sy; y<HUD_FONT_HEIGHT+sy; y++) {
-					destPtr = (unsigned short *)(((unsigned char *)fb_pixels) + y*1280) + sx;
+					destPtr = (unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch) + sx;
 					
 					for (x=0; x<HUD_FONT_WIDTH; x++) {
 						if (srcPtr[0] || srcPtr[1] || srcPtr[2]) {
@@ -810,7 +852,9 @@ Determine area used by text , so we can draw it centrally
 		}
 	}
 	
-
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 	
 	if(output_x) *output_x=sx;
 	if(output_y) *output_y=sy;
@@ -946,32 +990,39 @@ void RenderKeyConfigRectangle(int alpha)
 		((MUL_FIXED(0xFF,alpha)>>2)<<5 ) |
 		((MUL_FIXED(0xFF,alpha)>>3));
 	
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
 	
 	y = y1;
-	destPtr = (unsigned short *)(((unsigned char *)fb_pixels) + y*1280) + x1;
+	destPtr = (unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch) + x1;
 	for (x=x1; x<=x2; x++) {
 		*destPtr |= c;
 		destPtr++;
 	}
 	
 	y = y2;
-	destPtr = (unsigned short *)(((unsigned char *)fb_pixels) + y*1280) + x1;
+	destPtr = (unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch) + x1;
 	for (x=x1; x<=x2; x++) {
 		*destPtr |= c;
 		destPtr++;
 	}
 	
 	for (y=y1+1; y<y2; y++) {
-		destPtr = (unsigned short *)(((unsigned char *)fb_pixels) + y*1280) + x1;
+		destPtr = (unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch) + x1;
 		*destPtr |= c;
 	}
 	
 	for (y=y1+1; y<y2; y++) {
-		destPtr = (unsigned short *)(((unsigned char *)fb_pixels) + y*1280) + x2;
+		destPtr = (unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch) + x2;
 		*destPtr |= c;
 	}
 	
-
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 }
 
 void RenderHighlightRectangle(int x1, int y1, int x2, int y2, int r, int g, int b)
@@ -983,9 +1034,14 @@ void RenderHighlightRectangle(int x1, int y1, int x2, int y2, int r, int g, int 
 		((g>>2)<<5 ) |
 		((b>>3));
 
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
 
 	for (y=y1; y<=y2; y++) {
-		unsigned short *destPtr = (unsigned short *)(((unsigned char *)fb_pixels) + y*1280) + x1;
+		unsigned short *destPtr = (unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch) + x1;
 		
 		for (x = x1; x <= x2; x++) {
 			*destPtr |= c;
@@ -994,7 +1050,9 @@ void RenderHighlightRectangle(int x1, int y1, int x2, int y2, int r, int g, int 
 		}
 	}
 	
-
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 }
 
 void LoadAvPMenuGfx(enum AVPMENUGFX_ID menuGfxID)
@@ -1133,13 +1191,17 @@ void DrawAvpMenuBink(unsigned char* buf, int width, int height, int pitch)
 	if (length <= 0) return;
 	
 
-
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return;
+		}
+	}
 
 	unsigned short* srcPtr = (unsigned short*) buf;
-	unsigned short* dstPtr = (unsigned short*) ((((unsigned char *)fb_pixels) + (topleftY*1280)) + (topleftX*2));
+	unsigned short* dstPtr = (unsigned short*) ((((unsigned char *)surface->pixels) + (topleftY*surface->pitch)) + (topleftX*2));
 
 	unsigned int srcPitch = (pitch>>1);
-	unsigned int dstPitch = (1280>>1);
+	unsigned int dstPitch = (surface->pitch>>1);
 
 	for(int y=height; y!=0; y--)
 	{
@@ -1152,7 +1214,9 @@ void DrawAvpMenuBink(unsigned char* buf, int width, int height, int pitch)
 		dstPtr += dstPitch;
 	}
 	
-
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 }
 
 void DrawAvPMenuGfx(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topleftY, int alpha,enum AVPMENUFORMAT_ID format)
@@ -1190,12 +1254,17 @@ void DrawAvPMenuGfx(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topleftY, in
 	}
 	if (length <= 0) return;
 			
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
 	
 	if (alpha > ONE_FIXED) {
 		int x, y;
 		
 		for (y=topleftY; y<gfxPtr->Height+topleftY; y++) {
-			destPtr = ((unsigned short *)(((unsigned char *)fb_pixels) + y*1280)) + topleftX;
+			destPtr = ((unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch)) + topleftX;
 			
 			for (x=0; x<length; x++) {
 				*destPtr =	((srcPtr[0]>>3)<<11) |
@@ -1211,7 +1280,7 @@ void DrawAvPMenuGfx(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topleftY, in
 		int x, y;
 		
 		for (y=topleftY; y<gfxPtr->Height+topleftY; y++) {
-			destPtr = ((unsigned short *)(((unsigned char *)fb_pixels) + y*1280)) + topleftX;
+			destPtr = ((unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch)) + topleftX;
 			
 			for (x=0; x<length; x++) {
 				if (srcPtr[0] || srcPtr[1] || srcPtr[2]) {
@@ -1240,7 +1309,10 @@ void DrawAvPMenuGfx(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topleftY, in
 			srcPtr += (image->w - length) * 4;
 		}
 	}
-
+		
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 }
 
 void DrawAvPMenuGfx_CrossFade(enum AVPMENUGFX_ID menuGfxID,enum AVPMENUGFX_ID menuGfxID2,int alpha)
@@ -1262,6 +1334,11 @@ void DrawAvPMenuGfx_CrossFade(enum AVPMENUGFX_ID menuGfxID,enum AVPMENUGFX_ID me
 	srcPtr = image->buf;
 	srcPtr2 = image2->buf;
 	
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
 	
 	length = 640;
 	
@@ -1269,7 +1346,7 @@ void DrawAvPMenuGfx_CrossFade(enum AVPMENUGFX_ID menuGfxID,enum AVPMENUGFX_ID me
 		int x, y;
 		
 		for (y=0; y<480; y++) {
-			destPtr = ((unsigned short *)(((unsigned char *)fb_pixels) + y*1280));
+			destPtr = ((unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch));
 			
 			for (x=0; x<640; x++) {
 				*destPtr =	((srcPtr[0]>>3)<<11) |
@@ -1284,7 +1361,7 @@ void DrawAvPMenuGfx_CrossFade(enum AVPMENUGFX_ID menuGfxID,enum AVPMENUGFX_ID me
 		int x, y;
 		
 		for (y=0; y<480; y++) {
-			destPtr = ((unsigned short *)(((unsigned char *)fb_pixels) + y*1280));
+			destPtr = ((unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch));
 			
 			for (x=0; x<640; x++) {
 				unsigned int srcR1, srcR2;
@@ -1312,7 +1389,9 @@ void DrawAvPMenuGfx_CrossFade(enum AVPMENUGFX_ID menuGfxID,enum AVPMENUGFX_ID me
 		}
 	}
 	
-
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 	
 }
 
@@ -1351,12 +1430,17 @@ void DrawAvPMenuGfx_Faded(enum AVPMENUGFX_ID menuGfxID, int topleftX, int toplef
 	}
 	if (length <= 0) return;
 			
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
 	
 	{
 		int x, y;
 		
 		for (y=topleftY; y<gfxPtr->Height+topleftY; y++) {
-			destPtr = ((unsigned short *)(((unsigned char *)fb_pixels) + y*1280)) + topleftX;
+			destPtr = ((unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch)) + topleftX;
 			
 			for (x=0; x<length; x++) {
 				unsigned int srcR,srcG,srcB;
@@ -1377,7 +1461,10 @@ void DrawAvPMenuGfx_Faded(enum AVPMENUGFX_ID menuGfxID, int topleftX, int toplef
 			srcPtr += (image->w - length) * 4;
 		}
 	}
-
+		
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 }
 
 void DrawAvPMenuGfx_Clipped(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topleftY, int alpha,enum AVPMENUFORMAT_ID format, int topY, int bottomY)
@@ -1415,12 +1502,17 @@ void DrawAvPMenuGfx_Clipped(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topl
 	}
 	if (length <= 0) return;
 			
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
 	
 	if (alpha > ONE_FIXED) {
 		int x, y;
 		
 		for (y=topleftY; y<gfxPtr->Height+topleftY; y++) {
-			destPtr = ((unsigned short *)(((unsigned char *)fb_pixels) + y*1280)) + topleftX;
+			destPtr = ((unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch)) + topleftX;
 			
 			if(y>=topY && y<=bottomY) {
 				for (x=0; x<length; x++) {
@@ -1439,7 +1531,7 @@ void DrawAvPMenuGfx_Clipped(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topl
 		int x, y;
 		
 		for (y=topleftY; y<gfxPtr->Height+topleftY; y++) {
-			destPtr = ((unsigned short *)(((unsigned char *)fb_pixels) + y*1280)) + topleftX;
+			destPtr = ((unsigned short *)(((unsigned char *)surface->pixels) + y*surface->pitch)) + topleftX;
 			
 			if(y>=topY && y<=bottomY) {
 				for (x=0; x<length; x++) {
@@ -1470,7 +1562,10 @@ void DrawAvPMenuGfx_Clipped(enum AVPMENUGFX_ID menuGfxID, int topleftX, int topl
 			}
 		}
 	}
-
+		
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 }
 
 int HeightOfMenuGfx(enum AVPMENUGFX_ID menuGfxID)
@@ -1483,10 +1578,15 @@ void FadedScreen(int alpha)
 	int x, y;
 	unsigned short *ptr;
 	
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
 	
-	for (y = 60; y < 480-60; y++) {
-		ptr = (unsigned short *)(((unsigned char *)fb_pixels)+y*1280);
-		for (x = 0; x < 640; x++) {
+	for (y = 60; y < surface->h-60; y++) {
+		ptr = (unsigned short *)(((unsigned char *)surface->pixels)+y*surface->pitch);
+		for (x = 0; x < surface->w; x++) {
 			unsigned int srcR, srcG, srcB;
 			
 			srcR = (*ptr & 0xF800) >> 11;
@@ -1503,7 +1603,9 @@ void FadedScreen(int alpha)
 		}
 	}
 	
-
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 }
 
 void ClearScreenToBlack()
@@ -1511,15 +1613,22 @@ void ClearScreenToBlack()
 	int x, y;
 	unsigned short *ptr;
 	
+	if (SDL_MUSTLOCK(surface)) {
+		if (SDL_LockSurface(surface) < 0) {
+			return; /* ... */
+		}
+	}
 	
-	for (y = 0; y < 480; y++) {
-		ptr = (unsigned short *)(((unsigned char *)fb_pixels)+y*1280);
-		for (x = 0; x < 640; x++) {
+	for (y = 0; y < surface->h; y++) {
+		ptr = (unsigned short *)(((unsigned char *)surface->pixels)+y*surface->pitch);
+		for (x = 0; x < surface->w; x++) {
 			*ptr = 0;
 			
 			ptr++;
 		}
 	}
 	
-
+	if (SDL_MUSTLOCK(surface)) {
+		SDL_UnlockSurface(surface);
+	}
 }

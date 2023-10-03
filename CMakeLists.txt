@@ -3,6 +3,13 @@
 # CMake 2.8 project
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 
+# default to Release
+IF(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    MESSAGE(STATUS "No build type specified, defaulting to Release")
+    SET(CMAKE_BUILD_TYPE Release CACHE STRING "Build type; one of: Debug Release RelWithDebInfo MinSizeRel" FORCE)
+    SET_PROPERTY(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+ENDIF(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+
 # default to Desktop build
 IF(NOT AVP_BUILD_TYPE)
     SET(AVP_BUILD_TYPE DESKTOP CACHE STRING "Executable type; one of: DESKTOP WEB" FORCE)
@@ -13,23 +20,145 @@ IF(NOT AVP_BUILD_TYPE STREQUAL "DESKTOP" AND NOT AVP_BUILD_TYPE STREQUAL "WEB")
 ENDIF(NOT AVP_BUILD_TYPE STREQUAL "DESKTOP" AND NOT AVP_BUILD_TYPE STREQUAL "WEB")
 
 SET(AVP_WEB "NO")
+IF(AVP_BUILD_TYPE STREQUAL "WEB")
+    SET(AVP_WEB "YES")
+ENDIF(AVP_BUILD_TYPE STREQUAL "WEB")
 
 PROJECT(avp)
+
+IF(AVP_WEB)
+    IF(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -g4 -s USE_SDL=2 -s TOTAL_MEMORY=234881024 -s ASSERTIONS=2 -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2 -s DEMANGLE_SUPPORT=1")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g -g4 -s USE_SDL=2 -s TOTAL_MEMORY=234881024 -s ASSERTIONS=2 -s SAFE_HEAP=1 -s STACK_OVERFLOW_CHECK=2 -s DEMANGLE_SUPPORT=1")
+    ELSE()
+        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s USE_SDL=2 -s TOTAL_MEMORY=234881024")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s USE_SDL=2 -s TOTAL_MEMORY=234881024")
+    ENDIF()
+
+    IF(AVP_WEB_WASM)
+        SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -s WASM=1")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -s WASM=1")
+    ENDIF()
+ENDIF(AVP_WEB)
 
 SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
 SET(BUILD_SHARED_LIBS OFF)
 SET(CMAKE_EXE_LINKER_FLAGS "-static")
 
-SET(SDL_TYPE "SDL2")
-SET(OPENGL_TYPE "OPENGLES2")
+IF(MSVC)
+	SET(SDL2_FOUND 1)
+	SET(SDL_TYPE "SDL2")
+	SET(SDL2_LIBRARY "lib/x64/SDL2.lib")
+	SET(SDL2_INCLUDE_DIRS "include")
+	SET(SWSCALE_LIBRARIES "lib/swscale.lib")
+	SET(AVCODEC_LIBRARIES "lib/avcodec.lib")
+ENDIF(MSVC)
 
 # required dependencies
 IF(NOT AVP_WEB)
+    INCLUDE(FindOpenGLES2.cmake)
+	IF (NOT MSVC)
+		INCLUDE(FindSDL2.cmake)
+		INCLUDE(FindSDL)
+		INCLUDE(FindLibAV.cmake)
+	ENDIF(NOT MSVC)
+    INCLUDE(FindOpenGL)
+
+    # Use SDL 1.2 if it is installed, else use SDL 2.0.
+    IF(NOT SDL_TYPE)
+        SET(SDL_TYPE AUTO CACHE STRING "SDL Version; one of: AUTO SDL SDL2")
+        SET_PROPERTY(CACHE SDL_TYPE PROPERTY STRINGS "AUTO" "SDL" "SDL2")
+    ENDIF(NOT SDL_TYPE)
 
     IF(NOT SDL_TYPE STREQUAL "AUTO" AND NOT SDL_TYPE STREQUAL "SDL" AND NOT SDL_TYPE STREQUAL "SDL2")
         MESSAGE(FATAL_ERROR "Invalid SDL_TYPE setting ${SDL_TYPE}; must be one of AUTO SDL SDL2")
     ENDIF(NOT SDL_TYPE STREQUAL "AUTO" AND NOT SDL_TYPE STREQUAL "SDL" AND NOT SDL_TYPE STREQUAL "SDL2")
 
+    IF(SDL_FOUND)
+        IF(SDL_VERSION_STRING VERSION_LESS "1.2.0")
+            MESSAGE(WARNING "SDL 1.2 was claimed to be found with version ${SDL_VERSION_STRING}, ignoring...")
+            UNSET(SDL_FOUND)
+        ENDIF(SDL_VERSION_STRING VERSION_LESS "1.2.0")
+
+        IF(SDL_VERSION_STRING VERSION_GREATER "1.2.99")
+            MESSAGE(WARNING "SDL 1.2 was claimed to be found with version ${SDL_VERSION_STRING}, ignoring...")
+            UNSET(SDL_FOUND)
+        ENDIF(SDL_VERSION_STRING VERSION_GREATER "1.2.99")
+    ENDIF(SDL_FOUND)
+
+    IF(SDL_TYPE STREQUAL "AUTO")
+        IF(SDL_FOUND)
+            MESSAGE(STATUS "SDL 1.2 found; using that.")
+            SET(SDL_TYPE "SDL")
+        ENDIF(SDL_FOUND)
+    ENDIF(SDL_TYPE STREQUAL "AUTO")
+
+    IF(SDL_TYPE STREQUAL "AUTO")
+        IF(SDL2_FOUND)
+            MESSAGE(STATUS "SDL 2.0 found; using that.")
+            SET(SDL_TYPE "SDL2")
+        ENDIF(SDL2_FOUND)
+    ENDIF(SDL_TYPE STREQUAL "AUTO")
+
+    IF(SDL_TYPE STREQUAL "AUTO")
+        MESSAGE(FATAL_ERROR "SDL 1.2 or SDL 2.0 is required but CMake couldn't find it.")
+    ENDIF(SDL_TYPE STREQUAL "AUTO")
+
+    IF(SDL_TYPE STREQUAL "SDL")
+        IF(NOT SDL_FOUND)
+            MESSAGE(FATAL_ERROR "SDL 1.2 was requested but CMake couldn't find it.")
+        ENDIF(NOT SDL_FOUND)
+    ENDIF(SDL_TYPE STREQUAL "SDL")
+
+    IF(SDL_TYPE STREQUAL "SDL2")
+        IF(NOT SDL2_FOUND)
+            MESSAGE(FATAL_ERROR "SDL 2.0 was requested but CMake couldn't find it.")
+        ENDIF(NOT SDL2_FOUND)
+        MESSAGE(WARNING "SDL 2.0 support is EXPERIMENTAL and INCOMPLETE.")
+    ENDIF(SDL_TYPE STREQUAL "SDL2")
+
+    # Use Desktop OpenGL if it is available, else try OpenGL ES 2.0.
+    IF(NOT OPENGL_TYPE)
+        SET(OPENGL_TYPE AUTO CACHE STRING "OpenGL Version; one of: AUTO OPENGL OPENGLES2")
+        SET_PROPERTY(CACHE OPENGL_TYPE PROPERTY STRINGS "AUTO" "OPENGL" "OPENGLES2")
+    ENDIF(NOT OPENGL_TYPE)
+
+    IF(NOT OPENGL_TYPE STREQUAL "AUTO" AND NOT OPENGL_TYPE STREQUAL "OPENGL" AND NOT OPENGL_TYPE STREQUAL "OPENGLES2")
+        MESSAGE(FATAL_ERROR "Invalid OPENGL_TYPE setting ${OPENGL_TYPE}; must be one of AUTO OPENGL OPENGLES2")
+    ENDIF(NOT OPENGL_TYPE STREQUAL "AUTO" AND NOT OPENGL_TYPE STREQUAL "OPENGL" AND NOT OPENGL_TYPE STREQUAL "OPENGLES2")
+
+    IF(OPENGL_TYPE STREQUAL "AUTO")
+        IF(OPENGL_FOUND)
+            MESSAGE(STATUS "OpenGL found; using that.")
+            SET(OPENGL_TYPE "OPENGL")
+        ENDIF(OPENGL_FOUND)
+    ENDIF(OPENGL_TYPE STREQUAL "AUTO")
+
+    IF(OPENGL_TYPE STREQUAL "AUTO")
+        IF(OPENGLES2_FOUND)
+            MESSAGE(STATUS "OpenGL ES 2.0 found; using that.")
+            SET(OPENGL_TYPE "OPENGLES2")
+        ENDIF(OPENGLES2_FOUND)
+    ENDIF(OPENGL_TYPE STREQUAL "AUTO")
+
+    IF(OPENGL_TYPE STREQUAL "AUTO")
+        MESSAGE(FATAL_ERROR "OpenGL is required but CMake couldn't find it.")
+    ENDIF(OPENGL_TYPE STREQUAL "AUTO")
+
+    IF(OPENGL_TYPE STREQUAL "OPENGL")
+        IF(NOT OPENGL_FOUND)
+            MESAGE(FATAL_ERROR "OpenGL was requested but CMake couldn't find it.")
+        ENDIF(NOT OPENGL_FOUND)
+    ENDIF(OPENGL_TYPE STREQUAL "OPENGL")
+
+    IF(OPENGL_TYPE STREQUAL "OPENGLES2")
+        IF(NOT OPENGLES2_FOUND)
+            MESSAGE(FATAL_ERROR "OpenGL ES 2.0 was requested but CMake couldn't find it.")
+        ENDIF(NOT OPENGLES2_FOUND)
+        IF(NOT SDL_TYPE STREQUAL "SDL2")
+            MESSAGE(FATAL_ERROR "OpenGL ES 2.0 support requires SDL2.")
+        ENDIF(NOT SDL_TYPE STREQUAL "SDL2")
+    ENDIF(OPENGL_TYPE STREQUAL "OPENGLES2")
 ENDIF(NOT AVP_WEB)
 
 # required source files
@@ -252,6 +381,7 @@ LIST(APPEND source src/fmv.c)
 LIST(APPEND source src/openal.c)
 LIST(APPEND source src/cdplayer.c)
 LIST(APPEND source src/menus.c)
+LIST(APPEND source src/nxlink.c)
 
 IF(WIN32)
   LIST(APPEND source src/winfiles.c)
@@ -259,6 +389,10 @@ ELSE(WIN32)
   LIST(APPEND source src/files.c)
   LIST(APPEND source src/winapi.c)
 ENDIF(WIN32)
+
+IF(AVP_WEB)
+   LIST(APPEND source src/main.c)
+ENDIF(AVP_WEB)
 
 IF(NOT AVP_WEB)
     IF(SDL_TYPE STREQUAL "SDL")
@@ -286,68 +420,64 @@ FOREACH(sourcefile IN LISTS source)
 ENDFOREACH(sourcefile)
 INCLUDE_DIRECTORIES(${include})
 
-include("${VITASDK}/share/vita.cmake" REQUIRED)
-message("PSVita Release Build..")
-set(VITA_APP_NAME "Aliens vs Predator Gold")
-set(VITA_TITLEID  "AVPGOLD20")
-set(VITA_VERSION  "01.00")
-
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVITA -g -O2 -DNDEBUG -mfpu=neon -fno-optimize-sibling-calls -ftree-vectorize -fsingle-precision-constant -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -ffast-math -Wno-write-strings -fno-short-enums")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVITA -g -O2 -DNDEBUG -mfpu=neon -fno-optimize-sibling-calls -ftree-vectorize -fsingle-precision-constant -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -ffast-math -Wno-write-strings -fno-short-enums")
-
 # manually include src/include
 INCLUDE_DIRECTORIES(src/include)
 
+IF(AVP_WEB)
+    ADD_DEFINITIONS(-DUSE_OPENGL_ES=1)
+
+    ADD_EXECUTABLE(avp ${source})
+ENDIF(AVP_WEB)
+
 IF(NOT AVP_WEB)
-    add_executable(avp ${source})
+    ADD_EXECUTABLE(avp ${source})
 
-    INCLUDE_DIRECTORIES(${VITASDK}/arm-vita-eabi/include/SDL2)
+    # required dependencies
+    IF(WIN32)
+        TARGET_LINK_LIBRARIES(avp winmm)
+    ENDIF(WIN32)
 
-    target_link_libraries(avp
-		vitashark
-		mp3lame
-		openal
-		avutil
-		avformat
-		swscale
-		swresample
-		avcodec
-		SceDisplay_stub
-		SceGxm_stub
-		ScePgf_stub
-		ScePvf_stub
-		SceSysmodule_stub
-		SceCtrl_stub
-		SceTouch_stub
-		SceAudio_stub
-		ScePower_stub
-		SceHid_stub
-		SceAppMgr_stub
-		SceCommonDialog_stub
-		SceMotion_stub
-		SceShaccCg_stub
-		SDL2
-		vitaGL
-		mathneon
-		c
-		m
-		z
-		bz2
-		vita2d
-		-Wl,--whole-archive pthread -Wl,--no-whole-archive
-	)
+    IF(SDL_TYPE STREQUAL "SDL")
+        INCLUDE_DIRECTORIES(${SDL_INCLUDE_DIR})
+    ENDIF(SDL_TYPE STREQUAL "SDL")
+
+    IF(SDL_TYPE STREQUAL "SDL2")
+        INCLUDE_DIRECTORIES(${SDL2_INCLUDE_DIR})
+    ENDIF(SDL_TYPE STREQUAL "SDL2")
+
+    IF(OPENGL_TYPE STREQUAL "OPENGL")
+        INCLUDE_DIRECTORIES(${OPENGL_INCLUDE_DIR})
+    ENDIF(OPENGL_TYPE STREQUAL "OPENGL")
+
+    IF(OPENGL_TYPE STREQUAL "OPENGLES2")
+        ADD_DEFINITIONS(-DUSE_OPENGL_ES=1)
+        INCLUDE_DIRECTORIES(${OPENGLES2_INCLUDE_DIR})
+        INCLUDE_DIRECTORIES(${EGL_INCLUDE_DIR})
+    ENDIF(OPENGL_TYPE STREQUAL "OPENGLES2")
+
+    INCLUDE_DIRECTORIES(../openal-soft/include)
+
+    IF(SDL_TYPE STREQUAL "SDL")
+        TARGET_LINK_LIBRARIES(avp -static ${SDL_LIBRARY})
+    ENDIF(SDL_TYPE STREQUAL "SDL")
+
+    IF(SDL_TYPE STREQUAL "SDL2")
+        TARGET_LINK_LIBRARIES(avp -static ${SDL2_LIBRARY})
+    ENDIF(SDL_TYPE STREQUAL "SDL2")
+
+    IF(OPENGL_TYPE STREQUAL "OPENGL")
+        TARGET_LINK_LIBRARIES(avp -static ${OPENGL_gl_LIBRARY})
+    ENDIF(OPENGL_TYPE STREQUAL "OPENGL")
+
+    IF(OPENGL_TYPE STREQUAL "OPENGLES2")
+        TARGET_LINK_LIBRARIES(avp -static ${OPENGLES2_gl_LIBRARY})
+        TARGET_LINK_LIBRARIES(avp -static ${EGL_LIBRARIES})
+    ENDIF(OPENGL_TYPE STREQUAL "OPENGLES2")
+
+    TARGET_LINK_LIBRARIES(avp -static -L../openal-soft/lib -lopenal-soft)
+    TARGET_LINK_LIBRARIES(avp -static ${LIBAV_LIBRARIES})
+    TARGET_LINK_LIBRARIES(avp -static ${SWSCALE_LIBRARIES})
+    TARGET_LINK_LIBRARIES(avp -static ${AVCODEC_LIBRARIES})
+    #TARGET_LINK_LIBRARIES(avp -static -specs=${DEVKITPRO}/libnx/switch.specs -L${DEVKITPRO}/portlibs/switch/lib -lSDL2 -march=armv8-a -fPIE -L${DEVKITPRO}/libnx/lib -lEGL -lglapi -ldrm_nouveau -lnx -lm -lz -lbz2)
 
 ENDIF(NOT AVP_WEB)
-
-vita_create_self(${PROJECT_NAME}.self ${PROJECT_NAME})
-
-set(VITA_MKSFOEX_FLAGS "-d ATTRIBUTE2=12")
-
-vita_create_vpk(${PROJECT_NAME}.vpk ${VITA_TITLEID} ${PROJECT_NAME}.self
-	VERSION ${VITA_VERSION}
-	NAME ${VITA_APP_NAME}
-	FILE ${PROJECT_SOURCE_DIR}/sce_sys/icon0.png sce_sys/icon0.png
-	FILE ${PROJECT_SOURCE_DIR}/sce_sys/livearea/contents/bg.png sce_sys/livearea/contents/bg.png
-	FILE ${PROJECT_SOURCE_DIR}/sce_sys/livearea/contents/startup.png sce_sys/livearea/contents/startup.png
-	FILE ${PROJECT_SOURCE_DIR}/sce_sys/livearea/contents/template.xml sce_sys/livearea/contents/template.xml
-)

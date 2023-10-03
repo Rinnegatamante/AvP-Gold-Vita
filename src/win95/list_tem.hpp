@@ -23,7 +23,7 @@
 #include <stdio.h>
 
 #ifdef _CPPRTTI // run time type information available
-	#include <typeinfo.h>
+	#include <typeinfo>
 	#define LIST_TEM_TYPEID_THIS typeid(*this).name()
 #else
 	#define LIST_TEM_TYPEID_THIS "?"

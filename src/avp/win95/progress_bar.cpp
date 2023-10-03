@@ -228,7 +228,9 @@ void Game_Has_Loaded(void)
 
 	int f = 65536;
 	ResetFrameCounter();
+#if 0
 #warning Game_Has_Loaded commented out a blocking loop
+#endif
 	//do
 	{
 		CheckForWindowsMessages();

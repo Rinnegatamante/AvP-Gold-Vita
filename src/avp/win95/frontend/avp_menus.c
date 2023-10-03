@@ -3135,7 +3135,7 @@ static void InteractWithMenuElement(enum AVPMENU_ELEMENT_INTERACTION_ID interact
 				if(netGameData.connectionType == CONN_Mplayer)
 				{
 					//exit the game and launch the mplayer stuff
-				log2file("STUB: InteractWithMenuElement (launching mplayer...)\n");
+				fprintf(stderr, "STUB: InteractWithMenuElement (launching mplayer...)\n");
 				#if 0
 					LaunchingMplayer=TRUE;
 					LaunchMplayer();
@@ -5073,7 +5073,7 @@ extern void DrawMainMenusBackdrop(void)
 
 int WhiteOfBrightness(int brightness)
 {
-	log2file("WhiteOfBrightness(%d)\n", brightness);
+	fprintf(stderr, "WhiteOfBrightness(%d)\n", brightness);
 	
 	return 0;
 #if 0
@@ -5090,7 +5090,7 @@ int WhiteOfBrightness(int brightness)
 
 void RenderPixel(int x,int y,int r,int g,int b)
 {
-	log2file("RenderPixel(%d, %d, %d, %d, %d)\n", x, y, r, g, b);
+	fprintf(stderr, "RenderPixel(%d, %d, %d, %d, %d)\n", x, y, r, g, b);
 #if 0
 	extern DDPIXELFORMAT DisplayPixelFormat;
 	extern unsigned char *ScreenBuffer;
@@ -5801,7 +5801,7 @@ static void CheckForLoadGame()
 
 static void PasteFromClipboard(char* Text,int MaxTextLength)
 {
-	log2file("PasteFromClipboard(%p, %d)\n", Text, MaxTextLength);	
+	fprintf(stderr, "PasteFromClipboard(%p, %d)\n", Text, MaxTextLength);	
 #if 0
 	HANDLE hGlobal;
 	if(!Text)

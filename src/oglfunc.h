@@ -5,7 +5,15 @@
 #include <windows.h>
 #endif
 
-#include <vitaGL.h>
+#include "SDL_version.h"
+
+#if defined(USE_OPENGL_ES)
+#include "SDL_opengles2.h"
+
+#else
+#include "SDL_opengl.h"
+#endif
+
 
 #if !defined(GL_CLAMP_TO_EDGE)
 // Originally added by GL_SGIS_texture_edge_clamp; part of OpenGL 1.2 core.

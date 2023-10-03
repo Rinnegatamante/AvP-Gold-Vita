@@ -24,39 +24,6 @@
 #include "aw.h"
 #include "opengl.h"
 
-#include "shaders/default_f.h"
-#include "shaders/default_v.h"
-#include "shaders/no_color_no_discard_f.h"
-#include "shaders/no_color_v.h"
-#include "shaders/no_discard_f.h"
-#include "shaders/no_secondary_f.h"
-#include "shaders/no_secondary_v.h"
-#include "shaders/no_secondary_no_discard_f.h"
-#include "shaders/no_texture_f.h"
-#include "shaders/no_texture_v.h"
-
-void log2file(const char *format, ...) {
-	__gnuc_va_list arg;
-	int done;
-	va_start(arg, format);
-	char msg[512];
-	done = vsprintf(msg, format, arg);
-	va_end(arg);
-	int i;
-	sprintf(msg, "%s\n", msg);
-	FILE *log = fopen("ux0:/data/AvP.log", "a+");
-	if (log != NULL) {
-		fwrite(msg, 1, strlen(msg), log);
-		fclose(log);
-	}
-}
-
-int _newlib_heap_size_user = 256 * 1024 * 1024;
-uint16_t *gIndices;
-float *gVertexBuffer;
-uint16_t *gIndicesPtr;
-float *gVertexBufferPtr;
-
 int LightIntensityAtPoint(VECTORCH *pointPtr);
 
 extern IMAGEHEADER ImageHeaderArray[];
@@ -85,7 +52,7 @@ GLuint DefaultTexture;
 
 static enum TRANSLUCENCY_TYPE CurrentTranslucencyMode = TRANSLUCENCY_OFF;
 static enum FILTERING_MODE_ID CurrentFilteringMode = FILTERING_BILINEAR_OFF;
-static GLenum TextureMinFilter = GL_NEAREST_MIPMAP_LINEAR;
+static GLenum TextureMinFilter = GL_LINEAR; //GL_LINEAR_MIPMAP_LINEAR;
 static D3DTexture *CurrentlyBoundTexture = NULL;
 
 #if defined(_MSC_VER)
@@ -116,8 +83,8 @@ typedef struct TriangleArray
 	unsigned short c;
 } TriangleArray;
 
-static VertexArray varr[TA_MAXVERTICES];
-static TriangleArray tarr[TA_MAXTRIANGLES];
+static ALIGN16 VertexArray varr[TA_MAXVERTICES];
+static ALIGN16 TriangleArray tarr[TA_MAXTRIANGLES];
 static VertexArray *varrp = varr;
 static TriangleArray *tarrp = tarr;
 static int varrc, tarrc;
@@ -131,34 +98,243 @@ static void SetTranslucencyMode(enum TRANSLUCENCY_TYPE mode)
 	switch(mode) {
 		case TRANSLUCENCY_OFF:
 			if (TRIPTASTIC_CHEATMODE||MOTIONBLUR_CHEATMODE) {
-				glBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
+				pglBlendFunc(GL_ONE_MINUS_SRC_ALPHA, GL_SRC_ALPHA);
 			} else {			
-				glBlendFunc(GL_ONE, GL_ZERO);
+				pglBlendFunc(GL_ONE, GL_ZERO);
 			}
 			break;
 		case TRANSLUCENCY_NORMAL:
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+			pglBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 			break;
 		case TRANSLUCENCY_COLOUR:
-			glBlendFunc(GL_ZERO, GL_SRC_COLOR);
+			pglBlendFunc(GL_ZERO, GL_SRC_COLOR);
 			break;
 		case TRANSLUCENCY_INVCOLOUR:
-			glBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
+			pglBlendFunc(GL_ZERO, GL_ONE_MINUS_SRC_COLOR);
 			break;
 		case TRANSLUCENCY_GLOWING:
-			glBlendFunc(GL_SRC_ALPHA, GL_ONE);
+			pglBlendFunc(GL_SRC_ALPHA, GL_ONE);
 			break;
 		case TRANSLUCENCY_DARKENINGCOLOUR:
-			glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
+			pglBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
 			break;
 		case TRANSLUCENCY_JUSTSETZ:
-			glBlendFunc(GL_ZERO, GL_ONE);
+			pglBlendFunc(GL_ZERO, GL_ONE);
 			break;
 		default:
-			log2file("SetTranslucencyMode: invalid blend mode %d\n", mode);
+			fprintf(stderr, "SetTranslucencyMode: invalid blend mode %d\n", mode);
 			break;
 	}
 }
+
+#if defined(USE_OPENGL_ES)
+#define SHADER_PRAGMAS "\n"
+#define SHADER_VERSION "#version 100\n"
+#else
+#define SHADER_PRAGMAS "\n"
+#define SHADER_VERSION "#version 120\n"
+#endif
+
+#if USE_OPENGL_ES
+
+#define SHADER_SETUP \
+"#define HIGHP highp\n" \
+"#define MEDIUMP mediump\n" \
+"#define LOWP lowp\n"
+
+#else
+
+#define SHADER_SETUP \
+"#ifdef GL_ES\n" \
+"#define HIGHP highp\n" \
+"#define MEDIUMP mediump\n" \
+"#define LOWP lowp\n" \
+"#else\n" \
+"#define HIGHP\n" \
+"#define MEDIUMP\n" \
+"#define LOWP\n" \
+"#endif\n"
+
+#endif
+
+static const char AVP_VERTEX_SHADER_SOURCE[] =
+   SHADER_VERSION
+   SHADER_PRAGMAS
+   SHADER_SETUP
+   "\n"
+   "attribute HIGHP vec4 aVertex;\n"
+   "attribute HIGHP vec2 aTexCoord;\n"
+   "attribute LOWP vec4 aColor0;\n"
+   "attribute LOWP vec4 aColor1;\n"
+   "\n"
+   "varying HIGHP vec2 vTexCoord;\n"
+   "varying LOWP vec4 vColor0;\n"
+   "varying LOWP vec4 vColor1;\n"
+   "\n"
+   "void main(void)\n"
+   "{\n"
+   "	gl_Position = aVertex;\n"
+   "	vTexCoord	= aTexCoord;\n"
+   "	vColor0		= aColor0;\n"
+   "	vColor1     = aColor1;\n"
+   "}\n"
+   ;
+
+static const char AVP_VERTEX_SHADER_SOURCE_NO_SECONDARY[] =
+   SHADER_VERSION
+   SHADER_PRAGMAS
+   SHADER_SETUP
+   "\n"
+   "attribute HIGHP vec4 aVertex;\n"
+   "attribute HIGHP vec2 aTexCoord;\n"
+   "attribute LOWP vec4 aColor0;\n"
+   "\n"
+   "varying HIGHP vec2 vTexCoord;\n"
+   "varying LOWP vec4 vColor0;\n"
+   "\n"
+   "void main(void)\n"
+   "{\n"
+   "	gl_Position = aVertex;\n"
+   "	vTexCoord	= aTexCoord;\n"
+   "	vColor0		= aColor0;\n"
+   "}\n"
+   ;
+
+static const char AVP_VERTEX_SHADER_SOURCE_NO_TEXTURE[] =
+   SHADER_VERSION
+   SHADER_PRAGMAS
+   SHADER_SETUP
+   "\n"
+   "attribute HIGHP vec4 aVertex;\n"
+   "attribute LOWP vec4 aColor0;\n"
+   "\n"
+   "varying LOWP vec4 vColor0;\n"
+   "\n"
+   "void main(void)\n"
+   "{\n"
+   "	gl_Position = aVertex;\n"
+   "	vColor0		= aColor0;\n"
+   "}\n"
+   ;
+
+static const char AVP_VERTEX_SHADER_SOURCE_NO_COLOR[] =
+   SHADER_VERSION
+   SHADER_PRAGMAS
+   SHADER_SETUP
+   "\n"
+   "attribute HIGHP vec4 aVertex;\n"
+   "attribute HIGHP vec2 aTexCoord;\n"
+   "\n"
+   "varying HIGHP vec2 vTexCoord;\n"
+   "\n"
+   "void main(void)\n"
+   "{\n"
+   "	gl_Position = aVertex;\n"
+   "	vTexCoord	= aTexCoord;\n"
+   "}\n"
+   ;
+
+static const char AVP_FRAGMENT_SHADER_SOURCE[] =
+   SHADER_VERSION
+   SHADER_PRAGMAS
+   SHADER_SETUP
+   "\n"
+   "uniform LOWP sampler2D uTexture;\n"
+   "\n"
+   "varying HIGHP vec2 vTexCoord;\n"
+   "varying LOWP vec4 vColor0;\n"
+   "varying LOWP vec4 vColor1;\n"
+   "\n"
+   "void main(void)\n"
+   "{\n"
+   "\n"
+   "	MEDIUMP vec4 t       = texture2D( uTexture, vTexCoord );\n"
+   "	if (t.a == 0.0) discard;\n"
+   "	gl_FragColor = t * vColor0 + vColor1;\n"
+   "}\n"
+   ;
+
+static const char AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY[] =
+   SHADER_VERSION
+   SHADER_PRAGMAS
+   SHADER_SETUP
+   "\n"
+   "uniform LOWP sampler2D uTexture;\n"
+   "\n"
+   "varying HIGHP vec2 vTexCoord;\n"
+   "varying LOWP vec4 vColor0;\n"
+   "\n"
+   "void main(void)\n"
+   "{\n"
+   "	MEDIUMP vec4 t       = texture2D( uTexture, vTexCoord );\n"
+   "	if (t.a == 0.0) discard;\n"
+   "	gl_FragColor = t * vColor0;\n"
+   "}\n"
+   ;
+
+static const char AVP_FRAGMENT_SHADER_SOURCE_NO_TEXTURE[] =
+   SHADER_VERSION
+   SHADER_PRAGMAS
+   SHADER_SETUP
+   "\n"
+   "varying LOWP vec4 vColor0;\n"
+   "\n"
+   "void main(void)\n"
+   "{\n"
+   "	gl_FragColor = vColor0;\n"
+   "}\n"
+   ;
+
+static const char AVP_FRAGMENT_SHADER_SOURCE_NO_DISCARD[] =
+   SHADER_VERSION
+   SHADER_PRAGMAS
+   SHADER_SETUP
+   "\n"
+   "uniform LOWP sampler2D uTexture;\n"
+   "\n"
+   "varying HIGHP vec2 vTexCoord;\n"
+   "varying LOWP vec4 vColor0;\n"
+   "varying LOWP vec4 vColor1;\n"
+   "\n"
+   "void main(void)\n"
+   "{\n"
+   "	MEDIUMP vec4 t       = texture2D( uTexture, vTexCoord );\n"
+   "	gl_FragColor = t * vColor0 + vColor1;\n"
+   "}\n"
+   ;
+
+static const char AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY_NO_DISCARD[] =
+   SHADER_VERSION
+   SHADER_PRAGMAS
+   SHADER_SETUP
+   "\n"
+   "uniform LOWP sampler2D uTexture;\n"
+   "\n"
+   "varying HIGHP vec2 vTexCoord;\n"
+   "varying LOWP vec4 vColor0;\n"
+   "\n"
+   "void main(void)\n"
+   "{\n"
+   "	MEDIUMP vec4 t       = texture2D( uTexture, vTexCoord );\n"
+   "	gl_FragColor = t * vColor0;\n"
+   "}\n"
+   ;
+
+static const char AVP_FRAGMENT_SHADER_SOURCE_NO_COLOR_NO_DISCARD[] =
+   SHADER_VERSION
+   SHADER_PRAGMAS
+   SHADER_SETUP
+   "\n"
+   "uniform LOWP sampler2D uTexture;\n"
+   "\n"
+   "varying HIGHP vec2 vTexCoord;\n"
+   "\n"
+   "void main(void)\n"
+   "{\n"
+   "	MEDIUMP vec4 t       = texture2D( uTexture, vTexCoord );\n"
+   "	gl_FragColor = t;\n"
+   "}\n"
+   ;
 
 enum AVP_VERTEX_SHADER {
 	AVP_VERTEX_SHADER_DEFAULT,
@@ -178,25 +354,20 @@ enum AVP_FRAGMENT_SHADER {
 	AVP_FRAGMENT_SHADER_MAX
 };
 
-typedef struct {
-	char *bin;
-	uint32_t size;
-} shader_bin;
-
-static shader_bin AvpVertexShader[AVP_VERTEX_SHADER_MAX] = {
-	{default_v, size_default_v},
-	{no_texture_v, size_no_texture_v},
-	{no_secondary_v, size_no_secondary_v},
-	{no_color_v, size_no_color_v}
+static const char* const AvpVertexShaderSources[AVP_VERTEX_SHADER_MAX] = {
+	AVP_VERTEX_SHADER_SOURCE,
+	AVP_VERTEX_SHADER_SOURCE_NO_TEXTURE,
+	AVP_VERTEX_SHADER_SOURCE_NO_SECONDARY,
+	AVP_VERTEX_SHADER_SOURCE_NO_COLOR
 };
 
-static shader_bin AvpFragmentShader[AVP_FRAGMENT_SHADER_MAX] = {
-	{default_f, size_default_f},
-	{no_texture_f, size_no_texture_f},
-	{no_discard_f, size_no_discard_f},
-	{no_secondary_f, size_no_secondary_f},
-	{no_secondary_no_discard_f, size_no_secondary_no_discard_f},
-	{no_color_no_discard_f, size_no_color_no_discard_f}
+static const char* AvpFragmentShaderSources[AVP_FRAGMENT_SHADER_MAX] = {
+	AVP_FRAGMENT_SHADER_SOURCE,
+	AVP_FRAGMENT_SHADER_SOURCE_NO_TEXTURE,
+	AVP_FRAGMENT_SHADER_SOURCE_NO_DISCARD,
+	AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY,
+	AVP_FRAGMENT_SHADER_SOURCE_NO_SECONDARY_NO_DISCARD,
+	AVP_FRAGMENT_SHADER_SOURCE_NO_COLOR_NO_DISCARD
 };
 
 struct AvpShaderProgramSource {
@@ -214,6 +385,8 @@ struct AvpFragmentShader {
 
 struct AvpShaderProgram {
 	int programObj;
+
+	int uTexture;
 };
 
 static const struct AvpShaderProgramSource AvpShaderProgramSources[AVP_SHADER_PROGRAM_MAX] = {
@@ -249,13 +422,172 @@ static const struct AvpShaderProgramSource AvpShaderProgramSources[AVP_SHADER_PR
 	}
 };
 
+static const unsigned int AvpShaderProgramAttributes[AVP_SHADER_PROGRAM_MAX+1] = {
+	// AVP_SHADER_PROGRAM_DEFAULT
+	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (1 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (1 << OPENGL_COLOR0_ATTRIB_INDEX) | (1 << OPENGL_COLOR1_ATTRIB_INDEX),
+	// AVP_SHADER_PROGRAM_NO_SECONDARY
+	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (1 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (1 << OPENGL_COLOR0_ATTRIB_INDEX) | (0 << OPENGL_COLOR1_ATTRIB_INDEX),
+	// AVP_SHADER_PROGRAM_NO_TEXTURE
+	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (0 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (1 << OPENGL_COLOR0_ATTRIB_INDEX) | (0 << OPENGL_COLOR1_ATTRIB_INDEX),
+	// AVP_SHADER_PROGRAM_NO_DISCARD
+	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (1 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (1 << OPENGL_COLOR0_ATTRIB_INDEX) | (1 << OPENGL_COLOR1_ATTRIB_INDEX),
+	// AVP_SHADER_PROGRAM_NO_SECONDARY_NO_DISCARD
+	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (1 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (1 << OPENGL_COLOR0_ATTRIB_INDEX) | (0 << OPENGL_COLOR1_ATTRIB_INDEX),
+	// AVP_SHADER_PROGRAM_NO_COLOR_NO_DISCARD
+	(1 << OPENGL_VERTEX_ATTRIB_INDEX) | (1 << OPENGL_TEXCOORD_ATTRIB_INDEX) | (0 << OPENGL_COLOR0_ATTRIB_INDEX) | (0 << OPENGL_COLOR1_ATTRIB_INDEX),
+	// AVP_SHADER_PROGRAM_MAX
+	0
+};
+
+static const char* AvpShaderProgramAttributeNames[4] = {
+	"aVertex",
+	"aTexCoord",
+	"aColor0",
+	"aColor1"
+};
+
 static struct AvpVertexShader AvpVertexShaders[AVP_FRAGMENT_SHADER_MAX];
 static struct AvpFragmentShader AvpFragmentShaders[AVP_FRAGMENT_SHADER_MAX];
 static struct AvpShaderProgram AvpShaderPrograms[AVP_SHADER_PROGRAM_MAX];
 
-static int LinkProgram(GLuint program) {
-	glLinkProgram(program);
+static int CompileShader(GLuint shader, const GLchar* shaderSource) {
+	GLint infoLogLength;
+	GLchar* infoLog;
+	GLint compileStatus;
 
+	pglShaderSource(shader, 1, &shaderSource, NULL);
+	pglCompileShader(shader);
+
+	pglGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
+	if (infoLogLength > 1) {
+		infoLog = (GLchar*) malloc((size_t) infoLogLength * sizeof(GLchar));
+		if (infoLog == NULL) {
+			fprintf(stderr, "unable to allocate info log\n");
+			return GL_FALSE;
+		}
+
+		pglGetShaderInfoLog(shader, infoLogLength, NULL, infoLog);
+		printf("Shader:\n-------\n%s\n\nCompile Log:\n------------\n%s\n", shaderSource, infoLog);
+
+		free(infoLog);
+	}
+
+	pglGetShaderiv(shader, GL_COMPILE_STATUS, &compileStatus);
+	return compileStatus;
+}
+
+static int LinkProgram(GLuint program) {
+	GLint infoLogLength;
+	GLchar* infoLog;
+	GLint compileStatus;
+
+	pglLinkProgram(program);
+	pglGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
+
+	if (infoLogLength > 1) {
+		infoLog = (GLchar*) malloc((size_t) infoLogLength * sizeof(GLchar));
+		if (infoLog == NULL) {
+			fprintf(stderr, "unable to allocate info log\n");
+			return GL_FALSE;
+		}
+
+		pglGetProgramInfoLog(program, infoLogLength, NULL, infoLog);
+		printf("Program Link Log:\n%s\n", infoLog);
+
+		free(infoLog);
+	}
+
+	pglGetProgramiv(program, GL_LINK_STATUS, &compileStatus);
+	return compileStatus;
+}
+
+static int ValidateProgram(GLuint program) {
+	GLint infoLogLength;
+	GLchar* infoLog;
+	GLint compileStatus;
+
+	pglValidateProgram(program);
+
+	pglGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
+
+	if (infoLogLength > 1) {
+		infoLog = (GLchar*) malloc((size_t) infoLogLength * sizeof(GLchar));
+		if (infoLog == NULL) {
+			fprintf(stderr, "unable to allocate info log\n");
+			return GL_FALSE;
+		}
+
+		pglGetProgramInfoLog(program, infoLogLength, NULL, infoLog);
+		printf("Program Validation Log:\n%s\n", infoLog);
+
+		free(infoLog);
+	}
+
+	pglGetProgramiv(program, GL_VALIDATE_STATUS, &compileStatus);
+	return compileStatus;
+}
+
+static int CreateProgram(GLuint* pprogram, const GLchar* vertexShaderSource, const GLchar* fragmentShaderSource) {
+	GLuint program;
+	GLuint vertexShader;
+	GLuint fragmentShader;
+
+	GLint compileStatus;
+
+	// create program object
+	program = pglCreateProgram();
+
+	// vertex shader
+	vertexShader = pglCreateShader(GL_VERTEX_SHADER);
+
+	compileStatus = CompileShader(vertexShader, vertexShaderSource);
+
+	if (compileStatus == GL_FALSE) {
+		fprintf(stderr, "vertex shader compilation failed\n");
+
+		pglDeleteProgram(program);
+		return GL_FALSE;
+	}
+
+	pglAttachShader(program, vertexShader);
+	pglDeleteShader(vertexShader);
+
+	// fragment shader
+	fragmentShader = pglCreateShader(GL_FRAGMENT_SHADER);
+
+	compileStatus = CompileShader(fragmentShader, fragmentShaderSource);
+
+	if (compileStatus == GL_FALSE) {
+		fprintf(stderr, "fragment shader compilation failed\n");
+
+		pglDeleteProgram(program);
+		return GL_FALSE;
+	}
+
+	pglAttachShader(program, fragmentShader);
+	pglDeleteShader(fragmentShader);
+
+	// link the program
+	compileStatus = LinkProgram(program);
+
+	if (compileStatus == GL_FALSE) {
+		fprintf(stderr, "program failed to link\n");
+
+		pglDeleteProgram(program);
+		return GL_FALSE;
+	}
+
+	// validate the program for good measure
+	compileStatus = ValidateProgram(program);
+
+	if (compileStatus == GL_FALSE) {
+		fprintf(stderr, "program failed to validate\n");
+
+		pglDeleteProgram(program);
+		return GL_FALSE;
+	}
+
+	*pprogram = program;
 	return GL_TRUE;
 }
 
@@ -265,22 +597,39 @@ static int CreateProgram2(GLuint* pprogram, GLuint vertexShader, GLuint fragment
 	int i;
 
 	// create program object
-	program = glCreateProgram();
+	program = pglCreateProgram();
 
 	// vertex shader
-	glAttachShader(program, vertexShader);
+	pglAttachShader(program, vertexShader);
 
 	// fragment shader
-	glAttachShader(program, fragmentShader);
+	pglAttachShader(program, fragmentShader);
 
 	// need to bind locations before linking
-	vglBindPackedAttribLocation(program, "aVertex" ,  4, GL_FLOAT        ,                 0, sizeof(varr[0]));
-	vglBindPackedAttribLocation(program, "aTexCoord", 2, GL_FLOAT        , sizeof(float) * 4, sizeof(varr[0]));
-	vglBindPackedAttribLocation(program, "aColor0",   4, GL_UNSIGNED_BYTE, sizeof(float) * 6, sizeof(varr[0]));
-	vglBindPackedAttribLocation(program, "aColor1",   4, GL_UNSIGNED_BYTE, sizeof(float) * 7, sizeof(varr[0]));
+	pglBindAttribLocation(program, OPENGL_VERTEX_ATTRIB_INDEX, "aVertex");
+	pglBindAttribLocation(program, OPENGL_TEXCOORD_ATTRIB_INDEX, "aTexCoord");
+	pglBindAttribLocation(program, OPENGL_COLOR0_ATTRIB_INDEX, "aColor0");
+	pglBindAttribLocation(program, OPENGL_COLOR1_ATTRIB_INDEX, "aColor1");
 
 	// link the program
 	compileStatus = LinkProgram(program);
+
+	if (compileStatus == GL_FALSE) {
+		fprintf(stderr, "program failed to link\n");
+
+		pglDeleteProgram(program);
+		return GL_FALSE;
+	}
+
+	// validate the program for good measure
+	compileStatus = ValidateProgram(program);
+
+	if (compileStatus == GL_FALSE) {
+		fprintf(stderr, "program failed to validate\n");
+
+		pglDeleteProgram(program);
+		return GL_FALSE;
+	}
 
 	*pprogram = program;
 	return GL_TRUE;
@@ -293,8 +642,14 @@ static int InitOpenGLPrograms(void) {
 	for (i = 0; i < AVP_VERTEX_SHADER_MAX; i++) {
 		GLuint vertexShader;
 
-		vertexShader = glCreateShader(GL_VERTEX_SHADER);
-		glShaderBinary(1, &vertexShader, 0, AvpVertexShader[i].bin, AvpVertexShader[i].size);
+		vertexShader = pglCreateShader(GL_VERTEX_SHADER);
+
+		status = CompileShader(vertexShader, AvpVertexShaderSources[i]);
+
+		if (status == GL_FALSE) {
+			fprintf(stderr, "vertex shader compilation failed\n");
+			return GL_FALSE;
+		}
 
 		AvpVertexShaders[i].shaderObj = vertexShader;
 	}
@@ -302,8 +657,14 @@ static int InitOpenGLPrograms(void) {
 	for (i = 0; i < AVP_FRAGMENT_SHADER_MAX; i++) {
 		GLuint fragmentShader;
 
-		fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
-		glShaderBinary(1, &fragmentShader, 0, AvpFragmentShader[i].bin, AvpFragmentShader[i].size);
+		fragmentShader = pglCreateShader(GL_FRAGMENT_SHADER);
+
+		status = CompileShader(fragmentShader, AvpFragmentShaderSources[i]);
+
+		if (status == GL_FALSE) {
+			fprintf(stderr, "fragment shader compilation failed\n");
+			return GL_FALSE;
+		}
 
 		AvpFragmentShaders[i].shaderObj = fragmentShader;
 	}
@@ -318,11 +679,12 @@ static int InitOpenGLPrograms(void) {
 
 		status = CreateProgram2(&program, vertexShader, fragmentShader);
 		if (status == GL_FALSE) {
-			log2file("program compilation failed\n");
+			fprintf(stderr, "program compilation failed\n");
 			return GL_FALSE;
 		}
 
 		AvpShaderPrograms[i].programObj = program;
+		AvpShaderPrograms[i].uTexture = pglGetUniformLocation(program, "uTexture");
 	}
 
 	return GL_TRUE;
@@ -331,40 +693,106 @@ static int InitOpenGLPrograms(void) {
 void SelectProgram(enum AVP_SHADER_PROGRAM program) {
 
 	if (CurrShaderProgram != program) {
+		// supposed to flush here
+
+		unsigned int PrevAttribs = AvpShaderProgramAttributes[CurrShaderProgram];
+		unsigned int NextAttribs = AvpShaderProgramAttributes[program];
+		unsigned int DiffAttribs = PrevAttribs ^ NextAttribs;
 		int ShaderProgram = AvpShaderPrograms[program].programObj;
+		int TextureUniformIndex = AvpShaderPrograms[program].uTexture;
 
 		CurrShaderProgram = program;
-		glUseProgram(ShaderProgram);
+		pglUseProgram(ShaderProgram);
+
+		if ((DiffAttribs & OPENGL_VERTEX_ATTRIB_BITINDEX) != 0) {
+			if ((NextAttribs & OPENGL_VERTEX_ATTRIB_BITINDEX) != 0) {
+				pglEnableVertexAttribArray(OPENGL_VERTEX_ATTRIB_INDEX);
+			} else {
+				pglDisableVertexAttribArray(OPENGL_VERTEX_ATTRIB_INDEX);
+			}
+		}
+
+		if ((DiffAttribs & OPENGL_TEXCOORD_ATTRIB_BITINDEX) != 0) {
+			if ((NextAttribs & OPENGL_TEXCOORD_ATTRIB_BITINDEX) != 0) {
+				pglEnableVertexAttribArray(OPENGL_TEXCOORD_ATTRIB_INDEX);
+			} else {
+				pglDisableVertexAttribArray(OPENGL_TEXCOORD_ATTRIB_INDEX);
+			}
+		}
+
+		if ((DiffAttribs & OPENGL_COLOR0_ATTRIB_BITINDEX) != 0) {
+			if ((NextAttribs & OPENGL_COLOR0_ATTRIB_BITINDEX) != 0) {
+				pglEnableVertexAttribArray(OPENGL_COLOR0_ATTRIB_INDEX);
+			} else {
+				pglDisableVertexAttribArray(OPENGL_COLOR0_ATTRIB_INDEX);
+			}
+		}
+
+		if ((DiffAttribs & OPENGL_COLOR1_ATTRIB_BITINDEX) != 0) {
+			if ((NextAttribs & OPENGL_COLOR1_ATTRIB_BITINDEX) != 0) {
+				pglEnableVertexAttribArray(OPENGL_COLOR1_ATTRIB_INDEX);
+			} else {
+				pglDisableVertexAttribArray(OPENGL_COLOR1_ATTRIB_INDEX);
+			}
+		}
+
+		if (TextureUniformIndex >= 0) {
+			pglUniform1i(TextureUniformIndex, 0);
+		}
 	}
 }
 
 static void InitOpenGLDefaultTexture(void) {
-	glGenTextures(1, &DefaultTexture);
+	pglGenTextures(1, &DefaultTexture);
 
-	glBindTexture(GL_TEXTURE_2D, DefaultTexture);
+	pglBindTexture(GL_TEXTURE_2D, DefaultTexture);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
 	GLubyte defaultTexData[4] = { 255, 255, 255, 255 };
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, defaultTexData);
+	pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 1, 1, 0, GL_RGBA, GL_UNSIGNED_BYTE, defaultTexData);
 }
 
 void InitOpenGL(int firsttime)
 {
 	if (firsttime) {
 		InitOpenGLPrograms();
+		check_for_errors();
 		InitOpenGLDefaultTexture();
+		check_for_errors();
 	}
 
+	pglHint( GL_GENERATE_MIPMAP_HINT, GL_NICEST );
+
+#if GL_NV_multisample_filter_hint
+	if ( ogl_use_multisample_filter_hint )
+	{
+		pglHint( GL_MULTISAMPLE_FILTER_HINT_NV, GL_NICEST );
+	}
+#endif
+
 	CurrentTranslucencyMode = TRANSLUCENCY_OFF;
-	glBlendFunc(GL_ONE, GL_ZERO);
+	pglBlendFunc(GL_ONE, GL_ZERO);
 	
 	CurrentFilteringMode = FILTERING_BILINEAR_OFF;
 	CurrentlyBoundTexture = NULL;
+	pglBindTexture(GL_TEXTURE_2D, 0);
+
+	// create array and element array buffers, as required by WebGL
+	pglGenBuffers(1, &ArrayBuffer);
+	pglGenBuffers(1, &ElementArrayBuffer);
+
+	pglBindBuffer(GL_ARRAY_BUFFER, ArrayBuffer);
+	pglBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ElementArrayBuffer);
+
+	pglVertexAttribPointer(OPENGL_VERTEX_ATTRIB_INDEX, 4, GL_FLOAT, GL_FALSE, sizeof(varr[0]), (const GLvoid*) 0);
+	pglVertexAttribPointer(OPENGL_TEXCOORD_ATTRIB_INDEX, 2, GL_FLOAT, GL_FALSE, sizeof(varr[0]), (const GLvoid*) 16);
+	pglVertexAttribPointer(OPENGL_COLOR0_ATTRIB_INDEX, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(varr[0]), (const GLvoid*) 24);
+	pglVertexAttribPointer(OPENGL_COLOR1_ATTRIB_INDEX, 4, GL_UNSIGNED_BYTE, GL_TRUE, sizeof(varr[0]), (const GLvoid*) 28);
 
 	CurrShaderProgram = AVP_SHADER_PROGRAM_MAX;
 	SelectProgram(AVP_SHADER_PROGRAM_DEFAULT);
@@ -374,21 +802,18 @@ void InitOpenGL(int firsttime)
 		
 	varrc = 0;
 	varrp = varr;
+
+	check_for_errors();
 }
 
 static void FlushTriangleBuffers(int backup)
 {
 	if (tarrc) {
-		sceClibMemcpy(gVertexBuffer, varr, varrc * sizeof(varr[0]));
-		sceClibMemcpy(gIndices, tarr, tarrc * sizeof(tarr[0]));
-		
-		vglIndexPointerMapped(gIndices);
-		vglVertexAttribPointerMapped(0, gVertexBuffer);
-		
-		vglDrawObjects(GL_TRIANGLES, tarrc * 3, GL_FALSE);
-		
-		gVertexBuffer += varrc * sizeof(varr[0]);
-		gIndices += tarrc * sizeof(tarr[0]);
+		// not optimal but required by WebGL
+		pglBufferData(GL_ARRAY_BUFFER, varrc * sizeof(varr[0]), varr, GL_STREAM_DRAW);
+		pglBufferData(GL_ELEMENT_ARRAY_BUFFER, tarrc * sizeof(tarr[0]), tarr, GL_STREAM_DRAW);
+
+		pglDrawElements(GL_TRIANGLES, tarrc*3, GL_UNSIGNED_SHORT, (const GLvoid*) 0);
 		
 		tarrc = 0;
 		tarrp = tarr;
@@ -406,14 +831,14 @@ static void CheckBoundTextureIsCorrect(D3DTexture *tex)
 	FlushTriangleBuffers(1);
 	
 	if (tex == NULL) {
-		glBindTexture(GL_TEXTURE_2D, DefaultTexture);
+		pglBindTexture(GL_TEXTURE_2D, DefaultTexture);
 		
 		CurrentlyBoundTexture = NULL;
 		
 		return;
 	} 
 	
-	glBindTexture(GL_TEXTURE_2D, tex->id);
+	pglBindTexture(GL_TEXTURE_2D, tex->id);
 
 	/*if (tex->hasAlpha != 0 || tex->hasChroma != 0) {
 		// modulate emulation?
@@ -422,12 +847,12 @@ static void CheckBoundTextureIsCorrect(D3DTexture *tex)
 	if (tex->filter != CurrentFilteringMode) {
 		switch(CurrentFilteringMode) {
 			case FILTERING_BILINEAR_OFF:
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 				break;
 			case FILTERING_BILINEAR_ON:
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex->IsNpot ? GL_LINEAR : TextureMinFilter);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, tex->IsNpot ? GL_LINEAR : TextureMinFilter);
 				break;
 			default:
 				break;
@@ -448,12 +873,12 @@ static void CheckFilteringModeIsCorrect(enum FILTERING_MODE_ID filter)
 		
 		switch(CurrentFilteringMode) {
 			case FILTERING_BILINEAR_OFF:
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 				break;
 			case FILTERING_BILINEAR_ON:
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, CurrentlyBoundTexture->IsNpot ? GL_LINEAR : TextureMinFilter);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+				pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, CurrentlyBoundTexture->IsNpot ? GL_LINEAR : TextureMinFilter);
 				break;
 			default:
 				break;
@@ -526,7 +951,7 @@ static void CheckTriangleBuffer(int rver, int rtri, D3DTexture *tex, enum TRANSL
 				OUTPUT_TRIANGLE(0, 1, 2);
 				break;
 			default:
-				log2file("DrawTriangles_T2F_C4UB_V4F: vertices = %d\n", rver);
+				fprintf(stderr, "DrawTriangles_T2F_C4UB_V4F: vertices = %d\n", rver);
 		}
 	}	
 #undef OUTPUT_TRIANGLE
@@ -549,7 +974,7 @@ GLuint CreateOGLTexture(D3DTexture *tex, unsigned char *buf)
 	    buf = tex->buf;
 	}
 	if (buf == NULL) {
-	    log2file("CreateOGLTexture - null buffer\n");
+	    fprintf(stderr, "CreateOGLTexture - null buffer\n");
 	    return 0;
 	}
 
@@ -589,27 +1014,28 @@ GLuint CreateOGLTexture(D3DTexture *tex, unsigned char *buf)
 	
 	FlushTriangleBuffers(1);
 
-	glGenTextures(1, &h);
+	pglGenTextures(1, &h);
 
-	glBindTexture(GL_TEXTURE_2D, h);
+	pglBindTexture(GL_TEXTURE_2D, h);
 
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	if (tex->IsNpot) {
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	} else {
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, TextureMinFilter);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, TextureMinFilter);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	}
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex->w, tex->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
+	pglTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tex->w, tex->h, 0, GL_RGBA, GL_UNSIGNED_BYTE, buf);
 
 	if (!tex->IsNpot && TextureMinFilter != GL_LINEAR) {
 		// generate mipmaps if needed
-		glGenerateMipmap(GL_TEXTURE_2D);
+		// OpenGL 3.0 / ES 2 feature -- need fbo extension support
+		//pglGenerateMipmap(GL_TEXTURE_2D);
 	}
 
     tex->buf = NULL;
@@ -617,11 +1043,17 @@ GLuint CreateOGLTexture(D3DTexture *tex, unsigned char *buf)
 	tex->filter = FILTERING_BILINEAR_ON;
 	tex->RecipW = 1.0f / (float) tex->TexWidth;
 	tex->RecipH = 1.0f / (float) tex->TexHeight;
+
+	if ( ogl_use_texture_filter_anisotropic )
+	{
+		pglGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY_EXT, &max_anisotropy);
+		pglTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY_EXT, max_anisotropy);
+	}
 	
 	if ( CurrentlyBoundTexture != NULL )
 	{
 		/* restore the previously-bound texture */
-		glBindTexture(GL_TEXTURE_2D, CurrentlyBoundTexture->id);
+		pglBindTexture(GL_TEXTURE_2D, CurrentlyBoundTexture->id);
 	}
 	
 	free(buf);
@@ -638,7 +1070,7 @@ void ReleaseD3DTexture(void *tex)
 	}
 
 	if (TextureHandle->id != 0) {
-		glDeleteTextures(1, (GLuint*) &(TextureHandle->id));
+		pglDeleteTextures(1, (GLuint*) &(TextureHandle->id));
 		TextureHandle->id = 0;
 	}
 
@@ -681,37 +1113,37 @@ void ThisFramesRenderingHasFinished()
 
 void FlushD3DZBuffer()
 {
-	glClear(GL_DEPTH_BUFFER_BIT);
+	pglClear(GL_DEPTH_BUFFER_BIT);
 }
 
 void SecondFlushD3DZBuffer()
 {
 	FlushTriangleBuffers(0);
 	
-	glClear(GL_DEPTH_BUFFER_BIT);
+	pglClear(GL_DEPTH_BUFFER_BIT);
 }
 
 void D3D_DecalSystem_Setup()
 {
 	FlushTriangleBuffers(0);
 	
-	glDepthMask(GL_FALSE);
+	pglDepthMask(GL_FALSE);
 
 	/* enable polygon offset to help lessen decal z-fighting... */
-	/*glEnable(GL_POLYGON_OFFSET_FILL);
+	pglEnable(GL_POLYGON_OFFSET_FILL);
 	
 	static GLfloat factor = 0.0f;
 	static GLfloat units = -0.09375f;
-	glPolygonOffset(factor, units);*/
+	pglPolygonOffset(factor, units);
 }
 
 void D3D_DecalSystem_End()
 {
 	FlushTriangleBuffers(0);
 	
-	glDepthMask(GL_TRUE);
+	pglDepthMask(GL_TRUE);
 	
-	glDisable(GL_POLYGON_OFFSET_FILL);
+	pglDisable(GL_POLYGON_OFFSET_FILL);
 }
 
 /* ** */
@@ -1469,9 +1901,9 @@ void DrawNoiseOverlay(int tr)
 		varrc++;
 	}
 
-	glDepthFunc(GL_ALWAYS);
+	pglDepthFunc(GL_ALWAYS);
 	FlushTriangleBuffers(0);
-	glDepthFunc(GL_LEQUAL);
+	pglDepthFunc(GL_LEQUAL);
 }
 
 void D3D_ScreenInversionOverlay()
@@ -1592,9 +2024,9 @@ void D3D_PredatorScreenInversionOverlay()
 		varrc++;
 	}
 
-	glDepthFunc(GL_ALWAYS);
+	pglDepthFunc(GL_ALWAYS);
 	FlushTriangleBuffers(0);
-	glDepthFunc(GL_LEQUAL);
+	pglDepthFunc(GL_LEQUAL);
 }
 
 void DrawScanlinesOverlay(float level)
@@ -1659,9 +2091,9 @@ void DrawScanlinesOverlay(float level)
 		varrc++;
 	}
 
-	glDepthFunc(GL_ALWAYS);
+	pglDepthFunc(GL_ALWAYS);
 	FlushTriangleBuffers(0);
-	glDepthFunc(GL_LEQUAL);
+	pglDepthFunc(GL_LEQUAL);
 }
 
 void D3D_FadeDownScreen(int brightness, int colour)
@@ -1723,9 +2155,9 @@ void DrawFullscreenTexture(int texureObject)
 	FlushTriangleBuffers(0);
 	CheckTriangleBuffer(4, 0, NULL, TRANSLUCENCY_OFF, -1);
 	SelectProgram(AVP_SHADER_PROGRAM_NO_COLOR_NO_DISCARD);
-	glBindTexture(GL_TEXTURE_2D, texureObject);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	pglBindTexture(GL_TEXTURE_2D, texureObject);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	pglTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
 	for (j = 0; j < 4; j++) {
 
@@ -1774,7 +2206,7 @@ void DrawFullscreenTexture(int texureObject)
 	}
 
 	FlushTriangleBuffers(0);
-	glBindTexture(GL_TEXTURE_2D, 0);
+	pglBindTexture(GL_TEXTURE_2D, 0);
 }
 
 void D3D_HUD_Setup()
@@ -1783,7 +2215,7 @@ void D3D_HUD_Setup()
 	
 	CheckTranslucencyModeIsCorrect(TRANSLUCENCY_GLOWING);
 	
-	glDepthFunc(GL_LEQUAL);	
+	pglDepthFunc(GL_LEQUAL);	
 }
 
 void D3D_HUDQuad_Output(int imageNumber, struct VertexTag *quadVerticesPtr, unsigned int colour)
@@ -2115,7 +2547,7 @@ int Hardware_RenderSmallMenuText(char *textPtr, int x, int y, int alpha, enum AV
 	switch(format)
 	{
 		default:
-			log2file("Hardware_RenderSmallMenuText: UNKNOWN TEXT FORMAT\n");
+			fprintf(stderr, "Hardware_RenderSmallMenuText: UNKNOWN TEXT FORMAT\n");
 			exit(EXIT_FAILURE);
 //		GLOBALASSERT("UNKNOWN TEXT FORMAT"==0);
 		case AVPMENUFORMAT_LEFTJUSTIFIED:
@@ -2168,7 +2600,7 @@ int Hardware_RenderSmallMenuText_Coloured(char *textPtr, int x, int y, int alpha
 	{
 		default:
 //		GLOBALASSERT("UNKNOWN TEXT FORMAT"==0);
-			log2file("Hardware_RenderSmallMenuText_Coloured: UNKNOWN TEXT FORMAT\n");
+			fprintf(stderr, "Hardware_RenderSmallMenuText_Coloured: UNKNOWN TEXT FORMAT\n");
 			exit(EXIT_FAILURE);
 		case AVPMENUFORMAT_LEFTJUSTIFIED:
 		{
@@ -2724,9 +3156,9 @@ void ColourFillBackBuffer(int FillColour)
 	r = ((FillColour >> 16) & 0xFF) / 255.0f;
 	a = ((FillColour >> 24) & 0xFF) / 255.0f;
 
-	glClearColor(r, g, b, a);
+	pglClearColor(r, g, b, a);
 	
-	glClear(GL_COLOR_BUFFER_BIT);
+	pglClear(GL_COLOR_BUFFER_BIT);
 }
 
 void ColourFillBackBufferQuad(int FillColour, int x0, int y0, int x1, int y1)
@@ -3081,7 +3513,7 @@ void PostLandscapeRendering()
 //			CheckTranslucencyModeIsCorrect(TRANSLUCENCY_NORMAL);
 			
 			FlushTriangleBuffers(1);
-			glDepthMask(GL_FALSE);
+			pglDepthMask(GL_FALSE);
 
 			WaterFallBase = 109952;
 			
@@ -3094,7 +3526,7 @@ void PostLandscapeRendering()
 //			D3D_DrawWaterPatch(-100000, WaterFallBase, 538490);
 			
 			FlushTriangleBuffers(1);
-			glDepthMask(GL_TRUE);
+			pglDepthMask(GL_TRUE);
 		}
 		if (drawStream)
 		{
@@ -5280,7 +5712,7 @@ void D3D_DrawCable(VECTORCH *centrePtr, MATRIXCH *orientationPtr)
 	CurrTextureHandle = NULL;
 	CheckBoundTextureIsCorrect(NULL);
 	CheckTranslucencyModeIsCorrect(TRANSLUCENCY_GLOWING);
-	glDepthMask(GL_FALSE);
+	pglDepthMask(GL_FALSE);
 
 	MeshXScale = 4096/16;
 	MeshZScale = 4096/16;
@@ -5366,5 +5798,5 @@ void D3D_DrawCable(VECTORCH *centrePtr, MATRIXCH *orientationPtr)
 	}	
 	}
 	
-	glDepthMask(GL_TRUE);
+	pglDepthMask(GL_TRUE);
 }

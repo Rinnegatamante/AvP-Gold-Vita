@@ -11,7 +11,11 @@ typedef unsigned char U8;
 typedef signed short int S16;
 typedef unsigned short int U16;
 typedef signed int S32;
+#ifdef _MSC_VER
+typedef DWORD U32;
+#else
 typedef unsigned int U32;
+#endif
 
 class MediaMedium
 {
