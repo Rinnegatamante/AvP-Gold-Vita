@@ -13,6 +13,9 @@
 #define Yes 1 // sigh
 #define No 0 // sigh
 
+#define dw2Xpos dwZpos
+#define dw2Ypos dwRpos
+
 #pragma warning( disable: 4996 ) // unsafe function (strcpy, fopen, etc.) used
 
 #include "files.h"
