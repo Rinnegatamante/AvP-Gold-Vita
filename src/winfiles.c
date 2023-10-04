@@ -575,7 +575,7 @@ static int try_game_directory(const char *dir, const char *file)
 	strcat(tmppath, file);
 	
 	retr = GetFileAttributes(tmppath);
-
+	
 	if( retr == INVALID_FILE_ATTRIBUTES ) {
 		return 0;
 	}
@@ -752,6 +752,8 @@ static const char* GetGlobalDirectory(const char* argv0)
 			if (!check_game_directory(gamedir)) {
 				gamedir = NULL;
 			}
+			
+			return _strdup(gamedir);
 		}
 	}
 
