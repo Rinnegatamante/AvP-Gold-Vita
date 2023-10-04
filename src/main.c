@@ -121,7 +121,7 @@ static int WantMouseGrab = 1;
 static int WantFullscreen = 0;
 static int WantFullscreenToggle = 1;
 static int WantResolutionChange = 1;
-static int WantMouseGrab = 0;
+static int WantMouseGrab = 1;
 #endif
 
 // Additional configuration
@@ -169,10 +169,8 @@ void ReadJoysticks()
 	
 	JoystickData.dwXpos = 0;
 	JoystickData.dwYpos = 0;
-#if 0
 	JoystickData.dw2Xpos = 0;
 	JoystickData.dw2Ypos = 0;
-#endif
 	JoystickData.dwRpos = 0;
 	JoystickData.dwUpos = 0;
 	JoystickData.dwVpos = 0;
@@ -194,14 +192,14 @@ void ReadJoysticks()
 	if (axes > 1) {
 		JoystickData.dwYpos = SDL_JoystickGetAxis(joy, 1) + 32768;
 	}
-#if 0
+
 	if (axes > 2) {
 		JoystickData.dw2Xpos = SDL_JoystickGetAxis(joy, 2) + 32768;
 	}
 	if (axes > 3) {
 		JoystickData.dw2Ypos = SDL_JoystickGetAxis(joy, 3) + 32768;
 	}
-#endif
+
 	if (hats > 0) {
 		hat = SDL_JoystickGetHat(joy, 0);
 		
@@ -340,7 +338,8 @@ VideoModeStruct VideoModeList[] = {
 	{	1280,	960,	0	},
 	{	1280,	1024,	0	},
 	{	1600,	1200,	0	},
-	{	1920,	1080,	0	}
+	{	1920,	1080,	0	},
+	{	2560,	1440,	0	}
 };
 
 int CurrentVideoMode;
@@ -540,10 +539,8 @@ int InitSDL()
 			JoystickCaps.wCaps = 0; /* no rudder... ? */
 			
 			JoystickData.dwXpos = 0;
-#if 0
 			JoystickData.dw2Xpos = 0;
 			JoystickData.dw2Ypos = 0;
-#endif
 			JoystickData.dwYpos = 0;
 			JoystickData.dwRpos = 0;
 			JoystickData.dwUpos = 0;
@@ -1306,6 +1303,7 @@ void CheckForWindowsMessages()
 	DebouncedGotAnyKey = 0;
 	memset(DebouncedKeyboardInput, 0, sizeof(DebouncedKeyboardInput));
 	
+	SDL_SetRelativeMouseMode(SDL_TRUE);
 	wantmouse =	(SDL_GetRelativeMouseMode() == SDL_TRUE);
 
 	// "keyboard" events that don't have an up event
