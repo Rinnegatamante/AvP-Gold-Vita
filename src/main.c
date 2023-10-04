@@ -1019,7 +1019,6 @@ static int KeySymToKey(int keysym)
 	switch(keysym) {
 		case SDLK_ESCAPE:
 			return KEY_ESCAPE;
-			
 		case SDLK_0:
 			return KEY_0;
 		case SDLK_1:
@@ -1413,44 +1412,40 @@ void CheckForWindowsMessages()
 		
 		numbuttons = SDL_JoystickNumButtons(joy);
 		if (numbuttons > 16) numbuttons = 16;
+
+		// Use Dualshock/Dualsense mapping as default
+		uint32_t joy2key[] = {
+			KEY_CR, // Cross
+			KEY_BACKSPACE, // Circle
+			KEY_SPACE, // Square
+			KEY_RIGHTALT, // Triangle
+			KEY_TAB, // Select
+			KEY_HOME, // PSButton
+			KEY_ESCAPE, // Start
+			KEY_B, // ???
+			KEY_N, // ???
+			KEY_RMOUSE, // L1
+			KEY_LMOUSE, // R1
+			KEY_W, // Up
+			KEY_A, // Down
+			KEY_S, // Left
+			KEY_D, // Right
+			KEY_V, // ???
+		};
 		
 		for (x = 0; x < numbuttons; x++) {
+			uint32_t key_val = joy2key[x];
 			if (SDL_JoystickGetButton(joy, x)) {
 				GotAnyKey = 1;
-				if(KEY_JOYSTICK_BUTTON_1+x == KEY_JOYSTICK_BUTTON_12)
-				{
-					if (!KeyboardInput[KEY_CR]) {
-						KeyboardInput[KEY_CR] = 1;
-						DebouncedKeyboardInput[KEY_CR] = 1;
-						DebouncedGotAnyKey = 1;
-					}
-					continue;
-				}
-				else if(KEY_JOYSTICK_BUTTON_1+x == KEY_JOYSTICK_BUTTON_11)
-				{
-					if (!KeyboardInput[KEY_ESCAPE]) {
-						KeyboardInput[KEY_ESCAPE] = 1;
-						DebouncedKeyboardInput[KEY_ESCAPE] = 1;
-						DebouncedGotAnyKey = 1;
-					}
-					continue;
-				}
-				
-				if (!KeyboardInput[KEY_JOYSTICK_BUTTON_1+x]) {
-					KeyboardInput[KEY_JOYSTICK_BUTTON_1+x] = 1;
-					DebouncedKeyboardInput[KEY_JOYSTICK_BUTTON_1+x] = 1;
+				if (!KeyboardInput[key_val]) {
+					KeyboardInput[key_val] = 1;
+					DebouncedKeyboardInput[key_val] = 1;
 					DebouncedGotAnyKey = 1;
 				}
 			} else {
-				if(KEY_JOYSTICK_BUTTON_1+x == KEY_JOYSTICK_BUTTON_12)
-				{
-					KeyboardInput[KEY_CR] = 0;
+				if (KeyboardInput[key_val]) {
+					KeyboardInput[key_val] = 0;
 				}
-				else if(KEY_JOYSTICK_BUTTON_1+x == KEY_JOYSTICK_BUTTON_11)
-				{
-					KeyboardInput[KEY_ESCAPE] = 0;
-				}
-				KeyboardInput[KEY_JOYSTICK_BUTTON_1+x] = 0;
 			}	
 		}
 
@@ -1459,16 +1454,22 @@ void CheckForWindowsMessages()
 			#define JOYSTICK_DEAD_ZONE 6000
 			#endif
 			int axes = SDL_JoystickNumAxes(joy);
-			int xPos = 0, yPos = 0;
+
+			int xPos = 0, yPos = 0, xPos2 = 0, yPos2 = 0;
 			
 			if (axes > 0) {
 				xPos = SDL_JoystickGetAxis(joy, 0) + 32768;
+				if (axes > 1) {
+					yPos = SDL_JoystickGetAxis(joy, 1) + 32768;
+					if (axes > 2) {
+						xPos2 = SDL_JoystickGetAxis(joy, 2) + 32768;
+						if (axes > 3) {
+							yPos2 = SDL_JoystickGetAxis(joy, 3) + 32768;
+						}
+					}
+				}
 			}
 
-			if (axes > 1) {
-				yPos = SDL_JoystickGetAxis(joy, 1) + 32768;
-			}
-			
 			int yAxis = (32768-yPos)*2;
 			if(yAxis>JOYSTICK_DEAD_ZONE)
 			{
@@ -1501,6 +1502,40 @@ void CheckForWindowsMessages()
 			{
 				KeyboardInput[KEY_LEFT] = 0;
 				KeyboardInput[KEY_RIGHT] = 0;
+			}
+
+			int yAxis2 = (32768 - yPos2) * 2;
+			if (yAxis2 > JOYSTICK_DEAD_ZONE)
+			{
+				KeyboardInput[KEY_I] = 1;
+				DebouncedKeyboardInput[KEY_I] = 1;
+			}
+			else if (yAxis2 < -JOYSTICK_DEAD_ZONE)
+			{
+				KeyboardInput[KEY_K] = 1;
+				DebouncedKeyboardInput[KEY_K] = 1;
+			}
+			else
+			{
+				KeyboardInput[KEY_I] = 0;
+				KeyboardInput[KEY_K] = 0;
+			}
+
+			int xAxis2 = (xPos2 - 32768) * 2;
+			if (xAxis2 > JOYSTICK_DEAD_ZONE)
+			{
+				KeyboardInput[KEY_L] = 1;
+				DebouncedKeyboardInput[KEY_L] = 1;
+			}
+			else if (xAxis2 < -JOYSTICK_DEAD_ZONE)
+			{
+				KeyboardInput[KEY_J] = 1;
+				DebouncedKeyboardInput[KEY_J] = 1;
+			}
+			else
+			{
+				KeyboardInput[KEY_L] = 0;
+				KeyboardInput[KEY_J] = 0;
 			}
 		}
 	}
