@@ -1410,6 +1410,7 @@ void CheckForWindowsMessages()
 		
 		SDL_JoystickUpdate();
 		
+		static int old_buttons_state[20] = {0};
 		numbuttons = SDL_JoystickNumButtons(joy);
 		if (numbuttons > 16) numbuttons = 16;
 
@@ -1442,10 +1443,12 @@ void CheckForWindowsMessages()
 					DebouncedKeyboardInput[key_val] = 1;
 					DebouncedGotAnyKey = 1;
 				}
+				old_buttons_state[key_val] = 1;
 			} else {
-				if (KeyboardInput[key_val]) {
+				if (KeyboardInput[key_val] && old_buttons_state[key_val]) {
 					KeyboardInput[key_val] = 0;
 				}
+				old_buttons_state[key_val] = 0;
 			}	
 		}
 
@@ -1473,16 +1476,19 @@ void CheckForWindowsMessages()
 			int yAxis = (32768-yPos)*2;
 			if(yAxis>JOYSTICK_DEAD_ZONE)
 			{
+				old_buttons_state[16] = 1;
 				KeyboardInput[KEY_UP] = 1;
 				DebouncedKeyboardInput[KEY_UP] = 1;
 			}	
 			else if(yAxis<-JOYSTICK_DEAD_ZONE)
 			{
+				old_buttons_state[16] = 1;
 				KeyboardInput[KEY_DOWN] = 1;
 				DebouncedKeyboardInput[KEY_DOWN] = 1;
 			}
-			else
+			else if (old_buttons_state[17])
 			{
+				old_buttons_state[17] = 0;
 				KeyboardInput[KEY_UP] = 0;
 				KeyboardInput[KEY_DOWN] = 0;
 			}
@@ -1490,16 +1496,19 @@ void CheckForWindowsMessages()
 			int xAxis = (xPos-32768)*2;
 			if(xAxis>JOYSTICK_DEAD_ZONE)
 			{
+				old_buttons_state[17] = 1;
 				KeyboardInput[KEY_RIGHT] = 1;
 				DebouncedKeyboardInput[KEY_RIGHT] = 1;
 			}	
 			else if(xAxis<-JOYSTICK_DEAD_ZONE)
 			{
+				old_buttons_state[17] = 1;
 				KeyboardInput[KEY_LEFT] = 1;
 				DebouncedKeyboardInput[KEY_LEFT] = 1;
 			}
-			else
+			else if (old_buttons_state[17])
 			{
+				old_buttons_state[17] = 0;
 				KeyboardInput[KEY_LEFT] = 0;
 				KeyboardInput[KEY_RIGHT] = 0;
 			}
@@ -1507,16 +1516,19 @@ void CheckForWindowsMessages()
 			int yAxis2 = (32768 - yPos2) * 2;
 			if (yAxis2 > JOYSTICK_DEAD_ZONE)
 			{
+				old_buttons_state[18] = 1;
 				KeyboardInput[KEY_I] = 1;
 				DebouncedKeyboardInput[KEY_I] = 1;
 			}
 			else if (yAxis2 < -JOYSTICK_DEAD_ZONE)
 			{
+				old_buttons_state[18] = 1;
 				KeyboardInput[KEY_K] = 1;
 				DebouncedKeyboardInput[KEY_K] = 1;
 			}
-			else
+			else if(old_buttons_state[18])
 			{
+				old_buttons_state[18] = 0;
 				KeyboardInput[KEY_I] = 0;
 				KeyboardInput[KEY_K] = 0;
 			}
@@ -1524,16 +1536,19 @@ void CheckForWindowsMessages()
 			int xAxis2 = (xPos2 - 32768) * 2;
 			if (xAxis2 > JOYSTICK_DEAD_ZONE)
 			{
+				old_buttons_state[19] = 1;
 				KeyboardInput[KEY_L] = 1;
 				DebouncedKeyboardInput[KEY_L] = 1;
 			}
 			else if (xAxis2 < -JOYSTICK_DEAD_ZONE)
 			{
+				old_buttons_state[19] = 1;
 				KeyboardInput[KEY_J] = 1;
 				DebouncedKeyboardInput[KEY_J] = 1;
 			}
-			else
+			else if (old_buttons_state[19])
 			{
+				old_buttons_state[19] = 0;
 				KeyboardInput[KEY_L] = 0;
 				KeyboardInput[KEY_J] = 0;
 			}
