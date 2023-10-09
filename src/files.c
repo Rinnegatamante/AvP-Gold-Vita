@@ -907,10 +907,10 @@ void InitGameDirectories(char *argv0)
 	
 	/* last chance sanity check */
 	if (!check_game_directory(gamedir)) {
-		log2file("Unable to find the AvP gamedata.\n");
-		log2file("The directory last examined was: %s\n", gamedir);
-		log2file("Has the game been installed and\n");
-		log2file("are all game files lowercase?\n");
+		printf("Unable to find the AvP gamedata.\n");
+		printf("The directory last examined was: %s\n", gamedir);
+		printf("Has the game been installed and\n");
+		printf("are all game files lowercase?\n");
 		exit(EXIT_FAILURE);
 	}
 

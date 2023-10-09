@@ -16,6 +16,7 @@
 #include "fixer.h"
 
 #include "3dc.h"
+#undef No
 #include "platform.h"
 #include "inline.h"
 #include "gamedef.h"
@@ -57,7 +58,9 @@
 #define USE_OPENGL_ES 1
 #endif
 
+#ifdef __vita__
 #include <vitasdk.h>
+#endif
 
 extern uint16_t *gIndices;
 extern uint16_t *gIndicesPtr;
@@ -1337,9 +1340,7 @@ int main(int argc, char *argv[])
 	scePowerSetBusClockFrequency(222);
 	scePowerSetGpuClockFrequency(222);
 	scePowerSetGpuXbarClockFrequency(166);
-	vglEnableRuntimeShaderCompiler(GL_FALSE);
 	vglInitExtended(0, 960, 544, 0x100000, SCE_GXM_MULTISAMPLE_4X);
-	vglUseVram(GL_TRUE);
 		
 	gVertexBufferPtr = (float*)malloc(0x1800000);
 	gIndicesPtr = (uint16_t*)malloc(0x600000);
@@ -1347,8 +1348,8 @@ int main(int argc, char *argv[])
 	gIndices = gIndicesPtr;
 	
 	if (InitSDL() == -1) {
-		log2file("Could not find a sutable resolution!\n");
-		log2file("At least 512x384 is needed.  Does OpenGL work?\n");
+		printf("Could not find a sutable resolution!\n");
+		printf("At least 512x384 is needed.  Does OpenGL work?\n");
 		exit(EXIT_FAILURE);
 	}
 		
@@ -1588,7 +1589,7 @@ static int MainGame_Update(void) {
 			AvP.GameMode = I_GM_Playing;
 			break;
 		default:
-			log2file("AvP.MainLoopRunning: gamemode = %d\n", AvP.GameMode);
+			printf("AvP.MainLoopRunning: gamemode = %d\n", AvP.GameMode);
 			exit(EXIT_FAILURE);
 		}
 		

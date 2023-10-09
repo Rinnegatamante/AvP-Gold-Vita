@@ -20,12 +20,12 @@ HANDLE CreateFile(const char *file, int mode, int x, int y, int flags, int flags
 {
 	int fd;
 	
-	log2file("CreateFile(%s, %d, %d, %d, %d, %d, %d)\n", file, mode, x, y, flags, flags2, z);
+	printf("CreateFile(%s, %d, %d, %d, %d, %d, %d)\n", file, mode, x, y, flags, flags2, z);
 
 	switch(mode) {
 		case GENERIC_READ:
 			if (flags != OPEN_EXISTING) {
-				log2file("CreateFile: GENERIC_READ flags = %d\n", flags);
+				printf("CreateFile: GENERIC_READ flags = %d\n", flags);
 				exit(EXIT_FAILURE);
 			}
  			fd = open(file, O_RDONLY);
@@ -36,7 +36,7 @@ HANDLE CreateFile(const char *file, int mode, int x, int y, int flags, int flags
 			break;
 		case GENERIC_WRITE:
 			if (flags != CREATE_ALWAYS) {
-				log2file("CreateFile: GENERIC_WRITE flags = %d\n", flags);
+				printf("CreateFile: GENERIC_WRITE flags = %d\n", flags);
 				exit(EXIT_FAILURE);
 			}
 			fd = open(file, O_WRONLY|O_TRUNC|O_CREAT, S_IRUSR|S_IWUSR);
@@ -47,7 +47,7 @@ HANDLE CreateFile(const char *file, int mode, int x, int y, int flags, int flags
 			break;
 		case GENERIC_READ|GENERIC_WRITE:
 		default:
-			log2file("CreateFile: unknown mode %d\n", mode);
+			printf("CreateFile: unknown mode %d\n", mode);
 			exit(EXIT_FAILURE);
 	}
 		
@@ -63,7 +63,7 @@ int WriteFile(HANDLE file, const void *data, int len, void *byteswritten, int lp
 {
 	unsigned long *bw, i;
 	
-	log2file("WriteFile(%d, %p, %d, %p, %d)\n", file, data, len, byteswritten, lpOverlapped);
+	printf("WriteFile(%d, %p, %d, %p, %d)\n", file, data, len, byteswritten, lpOverlapped);
 
 	bw = (unsigned long *)byteswritten;
 	*bw = 0;
@@ -81,7 +81,7 @@ int ReadFile(HANDLE file, void *data, int len, void *bytesread, int lpOverlapped
 {
 	unsigned long *br, i;
 	
-	log2file("ReadFile(%d, %p, %d, %p, %d)\n", file, data, len, bytesread, lpOverlapped);
+	printf("ReadFile(%d, %p, %d, %p, %d)\n", file, data, len, bytesread, lpOverlapped);
 
 	br = (unsigned long *)bytesread;
 	*br = 0;
@@ -99,7 +99,7 @@ int GetFileSize(HANDLE file, int lpFileSizeHigh)
 {
 	struct stat buf;
 	
-	log2file("GetFileSize(%d, %d)\n", file, lpFileSizeHigh);
+	printf("GetFileSize(%d, %d)\n", file, lpFileSizeHigh);
 	
 	if (fstat(file, &buf) == -1)
 		return -1;
@@ -109,7 +109,7 @@ int GetFileSize(HANDLE file, int lpFileSizeHigh)
 int CloseHandle(HANDLE file)
 {
 
-	log2file("CloseHandle(%d)\n", file);
+	printf("CloseHandle(%d)\n", file);
 	
 	if (close(file) == -1) 
 		return 0;
@@ -122,7 +122,7 @@ int CloseHandle(HANDLE file)
 int DeleteFile(const char *file)
 {
 
-	log2file("DeleteFile(%s)\n", file);
+	printf("DeleteFile(%s)\n", file);
 	
 	if (unlink(file) == -1)
 		return 0;
@@ -137,7 +137,7 @@ int DeleteFileA(const char *file)
 
 int GetDiskFreeSpace(int x, unsigned long *a, unsigned long *b, unsigned long *c, unsigned long *d)
 {
-	log2file("GetDiskFreeSpace(%d, %p, %p, %p, %p)\n", x, a, b, c, d);
+	printf("GetDiskFreeSpace(%d, %p, %p, %p, %p)\n", x, a, b, c, d);
 
 	return 0;
 }
@@ -145,7 +145,7 @@ int GetDiskFreeSpace(int x, unsigned long *a, unsigned long *b, unsigned long *c
 int CreateDirectory(char *dir, int lpSecurityAttributes)
 {
 
-	log2file("CreateDirectory(%s, %d)\n", dir, lpSecurityAttributes);
+	printf("CreateDirectory(%s, %d)\n", dir, lpSecurityAttributes);
 
 	if (sceIoMkdir(dir, 0777) == -1)
 		return 0;
@@ -155,7 +155,7 @@ int CreateDirectory(char *dir, int lpSecurityAttributes)
 
 int MoveFile(const char *newfile, const char *oldfile)
 {
-	log2file("MoveFile(%s, %s)\n", newfile, oldfile);
+	printf("MoveFile(%s, %s)\n", newfile, oldfile);
 	
 	return 0;
 }
@@ -167,14 +167,14 @@ int MoveFileA(const char *newfile, const char *oldfile)
 
 int CopyFile(const char *newfile, const char *oldfile, int x)
 {
-	log2file("CopyFile(%s, %s, %d)\n", newfile, oldfile, x);
+	printf("CopyFile(%s, %s, %d)\n", newfile, oldfile, x);
 	
 	return 0;
 }
 
 int GetFileAttributes(const char *file)
 {
-	log2file("GetFileAttributes(%s)\n", file);
+	printf("GetFileAttributes(%s)\n", file);
 	
 	return 0;
 }
@@ -186,14 +186,14 @@ int GetFileAttributesA(const char *file)
 
 unsigned int SetFilePointer(HANDLE file, int x, int y, int z)
 {
-	log2file("SetFilePointer(%d, %d, %d, %d)\n", file, x, y, z);
+	printf("SetFilePointer(%d, %d, %d, %d)\n", file, x, y, z);
 	
 	return 0;
 }
 
 int SetEndOfFile(HANDLE file)
 {
-	log2file("SetEndOfFile(%d)\n", file);
+	printf("SetEndOfFile(%d)\n", file);
 	
 	return 0;
 }

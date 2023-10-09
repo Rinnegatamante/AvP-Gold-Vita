@@ -292,8 +292,8 @@ set(VITA_APP_NAME "Aliens vs Predator Gold")
 set(VITA_TITLEID  "AVPGOLD20")
 set(VITA_VERSION  "01.00")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DVITA -g -O2 -DNDEBUG -mfpu=neon -fno-optimize-sibling-calls -ftree-vectorize -fsingle-precision-constant -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -ffast-math -Wno-write-strings -fno-short-enums")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DVITA -g -O2 -DNDEBUG -mfpu=neon -fno-optimize-sibling-calls -ftree-vectorize -fsingle-precision-constant -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -ffast-math -Wno-write-strings -fno-short-enums")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wl,-q,-allow-multiple-definition -DVITA -g -O3 -DNDEBUG -mfpu=neon -fno-optimize-sibling-calls -fsingle-precision-constant -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -ffast-math -Wno-write-strings -fno-short-enums")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-q,-allow-multiple-definition -DVITA -g -O3 -DNDEBUG -mfpu=neon -fno-optimize-sibling-calls -fsingle-precision-constant -march=armv7-a -mtune=cortex-a9 -mfloat-abi=hard -ffast-math -Wno-write-strings -fno-short-enums")
 
 # manually include src/include
 INCLUDE_DIRECTORIES(src/include)
@@ -304,20 +304,32 @@ IF(NOT AVP_WEB)
     INCLUDE_DIRECTORIES(${VITASDK}/arm-vita-eabi/include/SDL2)
 
     target_link_libraries(avp
+		SDL2
+		vitaGL
+		mathneon
 		vitashark
-		mp3lame
+		SceShaccCgExt
+		taihen_stub
 		openal
-		avutil
 		avformat
+		avcodec
+		avutil
 		swscale
 		swresample
-		avcodec
+		mp3lame
+		z
+		bz2
+		SceAudio_stub
+		SceAudioIn_stub
+		SceKernelDmacMgr_stub
+		SceIme_stub
 		SceDisplay_stub
 		SceGxm_stub
 		ScePgf_stub
 		ScePvf_stub
 		SceSysmodule_stub
 		SceCtrl_stub
+		SceShaccCg_stub
 		SceTouch_stub
 		SceAudio_stub
 		ScePower_stub
@@ -326,14 +338,8 @@ IF(NOT AVP_WEB)
 		SceCommonDialog_stub
 		SceMotion_stub
 		SceShaccCg_stub
-		SDL2
-		vitaGL
-		mathneon
 		c
 		m
-		z
-		bz2
-		vita2d
 		-Wl,--whole-archive pthread -Wl,--no-whole-archive
 	)
 

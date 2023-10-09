@@ -26,21 +26,21 @@ int VideoModeNotAvailable=0;
 //void PlayBinkedFMV(char *filenamePtr)
 //{
 /*
-	log2file("PlayBinkedFMV(%s)\n", filenamePtr);
+	printf("PlayBinkedFMV(%s)\n", filenamePtr);
 */
 //}
 
 //void StartMenuBackgroundBink()
 //{
 /*
-	log2file("StartMenuBackgroundBink()\n");
+	printf("StartMenuBackgroundBink()\n");
 */
 //}
 
 //int PlayMenuBackgroundBink()
 //{
 /*
-	log2file("PlayMenuBackgroundBink()\n");
+	printf("PlayMenuBackgroundBink()\n");
 */	
 //	return 0;
 //}
@@ -48,24 +48,24 @@ int VideoModeNotAvailable=0;
 //void EndMenuBackgroundBink()
 //{
 /*
-	log2file("EndMenuBackgroundBink()\n");
+	printf("EndMenuBackgroundBink()\n");
 */
 //}
 
 /* alt_tab.cpp */
 void ATIncludeSurface(void * pSurface, void * hBackup)
 {
-	log2file("ATIncludeSurface(%p, %p)\n", pSurface, hBackup);
+	printf("ATIncludeSurface(%p, %p)\n", pSurface, hBackup);
 }
 
 void ATRemoveSurface(void * pSurface)
 {
-	log2file("ATRemoveSurface(%p)\n", pSurface);
+	printf("ATRemoveSurface(%p)\n", pSurface);
 }
 
 void ATRemoveTexture(void * pTexture)
 {
-	log2file("ATRemoveTexture(%p)\n", pTexture);
+	printf("ATRemoveTexture(%p)\n", pTexture);
 }
 
 
@@ -73,7 +73,7 @@ void ATRemoveTexture(void * pTexture)
 int GetTextureHandle(IMAGEHEADER *imageHeaderPtr)
 {
 /*
-	log2file("GetTextureHandle(%p)\n", imageHeaderPtr);
+	printf("GetTextureHandle(%p)\n", imageHeaderPtr);
 */	
 	return 1;
 }
@@ -81,27 +81,27 @@ int GetTextureHandle(IMAGEHEADER *imageHeaderPtr)
 void ReleaseDirect3DNotDDOrImages()
 {
 /*
-	log2file("ReleaseDirect3DNotDDOrImages()\n");
+	printf("ReleaseDirect3DNotDDOrImages()\n");
 */	
 }
 
 void ReleaseDirect3DNotDD()
 {
 /*
-	log2file("ReleaseDirect3DNotDD()\n");
+	printf("ReleaseDirect3DNotDD()\n");
 */	
 }
 
 void ReleaseDirect3D()
 {
 /*
-	log2file("ReleaseDirect3D()\n");
+	printf("ReleaseDirect3D()\n");
 */
 }
 
 void ReloadImageIntoD3DImmediateSurface(IMAGEHEADER* iheader)
 {
-	log2file("ReloadImageIntoD3DImmediateSurface(%p)\n", iheader);
+	printf("ReloadImageIntoD3DImmediateSurface(%p)\n", iheader);
 }
 
 
@@ -113,14 +113,14 @@ int WireFrameMode;
 void InitDrawTest()
 {
 /*
-	log2file("InitDrawTest()\n");
+	printf("InitDrawTest()\n");
 */
 }
 
 void CheckWireFrameMode(int shouldBeOn)
 {
 	if (shouldBeOn)
-		log2file("CheckWireFrameMode(%d)\n", shouldBeOn);
+		printf("CheckWireFrameMode(%d)\n", shouldBeOn);
 }
 
 
@@ -128,7 +128,7 @@ void CheckWireFrameMode(int shouldBeOn)
 void MinimizeAllDDGraphics()
 {
 /*
-	log2file("MinimizeAllDDGraphics()\n");
+	printf("MinimizeAllDDGraphics()\n");
 */	
 }
 
@@ -139,38 +139,38 @@ int VideoModeColourDepth;
 
 void BlitWin95Char(int x, int y, unsigned char toprint)
 {
-	log2file("BlitWin95Char(%d, %d, %d)\n", x, y, toprint);
+	printf("BlitWin95Char(%d, %d, %d)\n", x, y, toprint);
 }
 
 void LockSurfaceAndGetBufferPointer()
 {
-	log2file("LockSurfaceAndGetBufferPointer()\n");
+	printf("LockSurfaceAndGetBufferPointer()\n");
 }
 
 void finiObjectsExceptDD()
 {
 /*
-	log2file("finiObjectsExceptDD()\n");
+	printf("finiObjectsExceptDD()\n");
 */	
 }
 
 void finiObjects()
 {
 /*
-	log2file("finiObjects()\n");
+	printf("finiObjects()\n");
 */	
 }
 
 void UnlockSurface()
 {
-	log2file("UnlockSurface()\n");
+	printf("UnlockSurface()\n");
 }
 
 
 BOOL ChangeDirectDrawObject()
 {
 /*
-	log2file("ChangeDirectDrawObject()\n");
+	printf("ChangeDirectDrawObject()\n");
 */	
 	return FALSE;
 }
@@ -178,7 +178,7 @@ BOOL ChangeDirectDrawObject()
 int SelectDirectDrawObject(void *pGUID)
 {
 /*
-	log2file("SelectDirectDrawObject(%p)\n", pGUID);
+	printf("SelectDirectDrawObject(%p)\n", pGUID);
 */
 	return 0;
 }
@@ -186,7 +186,7 @@ int SelectDirectDrawObject(void *pGUID)
 void GenerateDirectDrawSurface()
 {
 /*
-	log2file("GenerateDirectDrawSurface()\n");
+	printf("GenerateDirectDrawSurface()\n");
 */	
 }
 

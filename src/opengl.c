@@ -7,6 +7,7 @@
 #include "fixer.h"
 
 #include "3dc.h"
+#undef No
 #include "platform.h"
 #include "inline.h"
 #include "module.h"
@@ -35,21 +36,9 @@
 #include "shaders/no_texture_f.h"
 #include "shaders/no_texture_v.h"
 
-void log2file(const char *format, ...) {
-	__gnuc_va_list arg;
-	int done;
-	va_start(arg, format);
-	char msg[512];
-	done = vsprintf(msg, format, arg);
-	va_end(arg);
-	int i;
-	sprintf(msg, "%s\n", msg);
-	FILE *log = fopen("ux0:/data/AvP.log", "a+");
-	if (log != NULL) {
-		fwrite(msg, 1, strlen(msg), log);
-		fclose(log);
-	}
-}
+#ifdef __vita__
+#include <vitasdk.h>
+#endif
 
 int _newlib_heap_size_user = 256 * 1024 * 1024;
 uint16_t *gIndices;
@@ -155,7 +144,7 @@ static void SetTranslucencyMode(enum TRANSLUCENCY_TYPE mode)
 			glBlendFunc(GL_ZERO, GL_ONE);
 			break;
 		default:
-			log2file("SetTranslucencyMode: invalid blend mode %d\n", mode);
+			printf("SetTranslucencyMode: invalid blend mode %d\n", mode);
 			break;
 	}
 }
@@ -318,7 +307,7 @@ static int InitOpenGLPrograms(void) {
 
 		status = CreateProgram2(&program, vertexShader, fragmentShader);
 		if (status == GL_FALSE) {
-			log2file("program compilation failed\n");
+			printf("program compilation failed\n");
 			return GL_FALSE;
 		}
 
@@ -526,7 +515,7 @@ static void CheckTriangleBuffer(int rver, int rtri, D3DTexture *tex, enum TRANSL
 				OUTPUT_TRIANGLE(0, 1, 2);
 				break;
 			default:
-				log2file("DrawTriangles_T2F_C4UB_V4F: vertices = %d\n", rver);
+				printf("DrawTriangles_T2F_C4UB_V4F: vertices = %d\n", rver);
 		}
 	}	
 #undef OUTPUT_TRIANGLE
@@ -549,7 +538,7 @@ GLuint CreateOGLTexture(D3DTexture *tex, unsigned char *buf)
 	    buf = tex->buf;
 	}
 	if (buf == NULL) {
-	    log2file("CreateOGLTexture - null buffer\n");
+	    printf("CreateOGLTexture - null buffer\n");
 	    return 0;
 	}
 
@@ -2115,7 +2104,7 @@ int Hardware_RenderSmallMenuText(char *textPtr, int x, int y, int alpha, enum AV
 	switch(format)
 	{
 		default:
-			log2file("Hardware_RenderSmallMenuText: UNKNOWN TEXT FORMAT\n");
+			printf("Hardware_RenderSmallMenuText: UNKNOWN TEXT FORMAT\n");
 			exit(EXIT_FAILURE);
 //		GLOBALASSERT("UNKNOWN TEXT FORMAT"==0);
 		case AVPMENUFORMAT_LEFTJUSTIFIED:
@@ -2168,7 +2157,7 @@ int Hardware_RenderSmallMenuText_Coloured(char *textPtr, int x, int y, int alpha
 	{
 		default:
 //		GLOBALASSERT("UNKNOWN TEXT FORMAT"==0);
-			log2file("Hardware_RenderSmallMenuText_Coloured: UNKNOWN TEXT FORMAT\n");
+			printf("Hardware_RenderSmallMenuText_Coloured: UNKNOWN TEXT FORMAT\n");
 			exit(EXIT_FAILURE);
 		case AVPMENUFORMAT_LEFTJUSTIFIED:
 		{
