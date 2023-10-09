@@ -4962,9 +4962,9 @@ typedef struct predator_disc_save_block
 
 //behaviour block stuff
 	int counter;
-	int Destruct:1;
-	int Stuck	:1;
-	int Bounced :1; 
+	int Destruct;
+	int Stuck;
+	int Bounced; 
 	int bounces;
 
 	char Prev_Target_SBname[SB_NAME_LENGTH];
@@ -5007,7 +5007,7 @@ void LoadStrategy_PredatorDisc(SAVE_BLOCK_STRATEGY_HEADER* header)
 //strategy block stuff
 	*sbPtr->DynPtr = block->dynamics;
 	sbPtr->integrity = block->integrity;
-	sbPtr->SBDamageBlock = block->SBDamageBlock;
+	memcpy(&sbPtr->SBDamageBlock, &block->SBDamageBlock, sizeof(block->SBDamageBlock));
 
 	//load the hierarchy
 	{
@@ -5045,7 +5045,7 @@ void SaveStrategy_PredatorDisc(STRATEGYBLOCK* sbPtr)
 	block->dynamics.CollisionReportPtr=0;
 	
 	block->integrity = sbPtr->integrity;
-	block->SBDamageBlock = sbPtr->SBDamageBlock;
+	memcpy(&block->SBDamageBlock, &sbPtr->SBDamageBlock, sizeof(sbPtr->SBDamageBlock));
 //save hierarchy 
 	SaveHierarchy(&behav->HModelController);
 
@@ -5071,7 +5071,7 @@ typedef struct spear_bolt_save_block
 	AVP_BEHAVIOUR_TYPE Type;
 	int SubType;
 	unsigned int SpearThroughFragment;
-	unsigned int Stuck :1;
+	unsigned int Stuck;
 
 //strategy block stuff
 	DYNAMICSBLOCK dynamics;
@@ -5154,7 +5154,7 @@ typedef struct frisbee_save_block
 
 //behaviour block stuff
 	int counter;
-	int Bounced :1; 
+	int Bounced; 
 	int bounces;
 
 //strategy block stuff
@@ -5185,7 +5185,7 @@ void LoadStrategy_Frisbee(SAVE_BLOCK_STRATEGY_HEADER* header)
 //strategy block stuff
 	*sbPtr->DynPtr = block->dynamics;
 	sbPtr->integrity = block->integrity;
-	sbPtr->SBDamageBlock = block->SBDamageBlock;
+	memcpy(&sbPtr->SBDamageBlock, &block->SBDamageBlock, sizeof(block->SBDamageBlock));
 
 	//load the hierarchy
 	{
@@ -5217,7 +5217,7 @@ void SaveStrategy_Frisbee(STRATEGYBLOCK* sbPtr)
 	block->dynamics.CollisionReportPtr=0;
 	
 	block->integrity = sbPtr->integrity;
-	block->SBDamageBlock = sbPtr->SBDamageBlock;
+	memcpy(&block->SBDamageBlock, &sbPtr->SBDamageBlock, sizeof(sbPtr->SBDamageBlock));
 //save hierarchy 
 	SaveHierarchy(&behav->HModelController);
 

@@ -302,9 +302,9 @@ typedef struct particle_generator_save_block
 	MATRIXCH relative_orientation; //relative to parent object (if it exists)
 
 	int timer; //time left to next particle burst
-
-	unsigned int active :1;	//is generator currently active
-	unsigned int sound_playing :1;
+	
+	unsigned int active;	//is generator currently active
+	unsigned int sound_playing;
 
 }PARTICLE_GENERATOR_SAVE_BLOCK;
 

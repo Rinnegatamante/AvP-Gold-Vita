@@ -177,8 +177,13 @@ typedef struct predatorStatusBlock
 
 	/* And these for the laser dots. */
 	THREE_LASER_DOT_DESC Pred_Laser_Sight;
-	int Pred_Laser_On	:1;
-	int Explode			:1;
+	union {
+		struct {
+			int Pred_Laser_On	:1;
+			int Explode			:1;
+		};
+		int flags;
+	};
 	/* Pathfinder parameters */
 	int path;
 	int stepnumber;

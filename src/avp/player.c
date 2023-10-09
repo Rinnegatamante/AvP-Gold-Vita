@@ -1894,22 +1894,33 @@ typedef struct player_save_block
 
 	unsigned int securityClearances;
 
-	unsigned int IsAlive :1;
-	unsigned int IsImmortal :1;
-	unsigned int Mvt_AnalogueTurning :1;
-	unsigned int Mvt_AnaloguePitching :1;
-	unsigned int Absolute_Pitching :1;
-	unsigned int SwappingIsDebounced :1;
-	unsigned int DemoMode :1;
-	unsigned int IHaveAPlacedAutogun :1;
-	unsigned int IsMovingInWater :1;
-	unsigned int JetpackEnabled :1;
-	unsigned int GrapplingHookEnabled :1;
-
+	union {
+		struct {
+			unsigned int IsAlive :1;
+			unsigned int IsImmortal :1;
+			unsigned int Mvt_AnalogueTurning :1;
+			unsigned int Mvt_AnaloguePitching :1;
+			unsigned int Absolute_Pitching :1;
+			unsigned int SwappingIsDebounced :1;
+			unsigned int DemoMode :1;
+			unsigned int IHaveAPlacedAutogun :1;
+			unsigned int IsMovingInWater :1;
+			unsigned int JetpackEnabled :1;
+			unsigned int GrapplingHookEnabled :1;
+		};
+		unsigned int flags;
+	};
+	
 	unsigned int MTrackerType;
 
-	unsigned int cloakOn :1;
-	unsigned int cloakPositionGivenAway :1;
+	/* Patrick: 1/7/97 : for predator-type cloaking stuff */
+	union {
+		struct {
+			unsigned int cloakOn :1;
+			unsigned int cloakPositionGivenAway :1;
+		};
+		unsigned int cloak_flags;
+	};
 	int FieldCharge;
 	int cloakPositionGivenAwayTimer;
 	int PlasmaCasterCharge;
@@ -1975,22 +1986,11 @@ void SaveStrategy_Player(STRATEGYBLOCK* sbPtr)
 
 	COPYELEMENT_SAVE(securityClearances)
 
-	COPYELEMENT_SAVE(IsAlive)
-	COPYELEMENT_SAVE(IsImmortal)
-	COPYELEMENT_SAVE(Mvt_AnalogueTurning)
-	COPYELEMENT_SAVE(Mvt_AnaloguePitching)
-	COPYELEMENT_SAVE(Absolute_Pitching)
-	COPYELEMENT_SAVE(SwappingIsDebounced)
-	COPYELEMENT_SAVE(DemoMode)
-	COPYELEMENT_SAVE(IHaveAPlacedAutogun)
-	COPYELEMENT_SAVE(IsMovingInWater)
-	COPYELEMENT_SAVE(JetpackEnabled)
-	COPYELEMENT_SAVE(GrapplingHookEnabled )
+	COPYELEMENT_SAVE(flags)
 
 	COPYELEMENT_SAVE(MTrackerType)
 
-	COPYELEMENT_SAVE(cloakOn)
-	COPYELEMENT_SAVE(cloakPositionGivenAway)
+	COPYELEMENT_SAVE(cloak_flags)
 	COPYELEMENT_SAVE(FieldCharge)
 	COPYELEMENT_SAVE(cloakPositionGivenAwayTimer)
 	COPYELEMENT_SAVE(PlasmaCasterCharge)
@@ -2029,7 +2029,7 @@ void SaveStrategy_Player(STRATEGYBLOCK* sbPtr)
 	//strategy block stuff
 
 	block->integrity = sbPtr->integrity;
-	block->SBDamageBlock = sbPtr->SBDamageBlock;
+	memcpy(&sbPtr->SBDamageBlock, &block->SBDamageBlock, sizeof(block->SBDamageBlock));
 	
 	block->dynamics = *sbPtr->DynPtr;
 	block->dynamics.CollisionReportPtr=0;
@@ -2076,22 +2076,11 @@ void LoadStrategy_Player(SAVE_BLOCK_STRATEGY_HEADER* header)
 
 	COPYELEMENT_LOAD(securityClearances)
 
-	COPYELEMENT_LOAD(IsAlive)
-	COPYELEMENT_LOAD(IsImmortal)
-	COPYELEMENT_LOAD(Mvt_AnalogueTurning)
-	COPYELEMENT_LOAD(Mvt_AnaloguePitching)
-	COPYELEMENT_LOAD(Absolute_Pitching)
-	COPYELEMENT_LOAD(SwappingIsDebounced)
-	COPYELEMENT_LOAD(DemoMode)
-	COPYELEMENT_LOAD(IHaveAPlacedAutogun)
-	COPYELEMENT_LOAD(IsMovingInWater)
-	COPYELEMENT_LOAD(JetpackEnabled)
-	COPYELEMENT_LOAD(GrapplingHookEnabled )
+	COPYELEMENT_LOAD(flags)
 
 	COPYELEMENT_LOAD(MTrackerType)
 
-	COPYELEMENT_LOAD(cloakOn)
-	COPYELEMENT_LOAD(cloakPositionGivenAway)
+	COPYELEMENT_LOAD(cloak_flags)
 	COPYELEMENT_LOAD(FieldCharge)
 	COPYELEMENT_LOAD(cloakPositionGivenAwayTimer)
 	COPYELEMENT_LOAD(PlasmaCasterCharge)
@@ -2134,7 +2123,7 @@ void LoadStrategy_Player(SAVE_BLOCK_STRATEGY_HEADER* header)
 	//strategy block stuff
 	*sbPtr->DynPtr = block->dynamics;
 	sbPtr->integrity = block->integrity;
-	sbPtr->SBDamageBlock = block->SBDamageBlock;
+	memcpy(&block->SBDamageBlock, &sbPtr->SBDamageBlock, sizeof(sbPtr->SBDamageBlock));
 
 	
 	

@@ -95,36 +95,41 @@
 		/* KJL 16:56:38 16/07/98 */
 		LASER_BEAM_DESC TargetingLaser[3];
 
-		unsigned int headpandir			:1;
-		unsigned int headtiltdir		:1;
-		unsigned int leftarmpandir		:1;
-		unsigned int leftarmtiltdir		:1;
-		unsigned int rightarmpandir		:1;
-		unsigned int rightarmtiltdir	:1;
-		unsigned int torsotwistdir		:1;
+		union {
+		struct {
+			unsigned int headpandir			:1;
+			unsigned int headtiltdir		:1;
+			unsigned int leftarmpandir		:1;
+			unsigned int leftarmtiltdir		:1;
+			unsigned int rightarmpandir		:1;
+			unsigned int rightarmtiltdir	:1;
+			unsigned int torsotwistdir		:1;
 	
-		unsigned int headLock			:1;
-		unsigned int leftArmLock		:1;
-		unsigned int rightArmLock		:1;
-		unsigned int targetSightTest	:1;
-		unsigned int IAmFar				:1;
-		unsigned int ShotThisFrame		:1;
+			unsigned int headLock			:1;
+			unsigned int leftArmLock		:1;
+			unsigned int rightArmLock		:1;
+			unsigned int targetSightTest	:1;
+			unsigned int IAmFar				:1;
+			unsigned int ShotThisFrame		:1;
 	
-		unsigned int FiringLeft			:1;
-		unsigned int FiringRight		:1;
+			unsigned int FiringLeft			:1;
+			unsigned int FiringRight		:1;
 
-		unsigned int UseHeadLaser		:1;
-		unsigned int UseLALaser			:1;
-		unsigned int UseRALaser			:1;
+			unsigned int UseHeadLaser		:1;
+			unsigned int UseLALaser			:1;
+			unsigned int UseRALaser			:1;
 
-		unsigned int HeadLaserOnTarget	:1;
-		unsigned int LALaserOnTarget	:1;
-		unsigned int RALaserOnTarget	:1;
+			unsigned int HeadLaserOnTarget	:1;
+			unsigned int LALaserOnTarget	:1;
+			unsigned int RALaserOnTarget	:1;
 
-		unsigned int head_moving		:1;
-		unsigned int la_moving			:1;
-		unsigned int ra_moving			:1;
-		unsigned int torso_moving		:1;
+			unsigned int head_moving		:1;
+			unsigned int la_moving			:1;
+			unsigned int ra_moving			:1;
+			unsigned int torso_moving		:1;
+		};
+		unsigned int flags;
+	};
 
 		int soundHandle1;
 		int soundHandle2;

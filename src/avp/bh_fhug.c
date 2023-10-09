@@ -1288,8 +1288,7 @@ void LoadStrategy_FaceHugger(SAVE_BLOCK_STRATEGY_HEADER* header)
 	//copy strategy block stuff
 	*sbPtr->DynPtr = block->dynamics;
 	sbPtr->integrity = block->integrity;
-	sbPtr->SBDamageBlock = block->SBDamageBlock;
-
+	memcpy(&sbPtr->SBDamageBlock, &block->SBDamageBlock, sizeof(block->SBDamageBlock));
 	
 	//load the hierarchy
 	{
@@ -1326,7 +1325,7 @@ void SaveStrategy_FaceHugger(STRATEGYBLOCK* sbPtr)
 	block->dynamics.CollisionReportPtr=0;
 	
 	block->integrity = sbPtr->integrity;
-	block->SBDamageBlock = sbPtr->SBDamageBlock;
+	memcpy(&block->SBDamageBlock, &sbPtr->SBDamageBlock, sizeof(sbPtr->SBDamageBlock));
 
 	//save the hierarchy
 	SaveHierarchy(&huggerStatusPointer->HModelController);

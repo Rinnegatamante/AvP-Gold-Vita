@@ -4827,18 +4827,24 @@ typedef struct hierarchy_save_block
 	int AT_seconds_for_sequence;
 	int AT_sequence_timer;
 
-	unsigned int Playing:1;
-	unsigned int Reversed:1;
-	unsigned int Looped:1;
-	unsigned int Tweening:2;
-	unsigned int LoopAfterTweening:1;
-	unsigned int StopAfterTweening:1;
-	unsigned int ElevationTweening:1;
-	unsigned int DisableBleeding:1;
-	unsigned int LockTopSection:1;
-	unsigned int ZeroRootDisplacement:1;
-	unsigned int ZeroRootRotation:1;
-	unsigned int DisableSounds:1;
+	union {
+		struct {
+			unsigned int Playing:1;
+			unsigned int Reversed:1;
+			unsigned int Looped:1;
+			unsigned int Tweening:2;
+			unsigned int LoopAfterTweening:1;
+			unsigned int StopAfterTweening:1;
+			unsigned int ElevationTweening:1;
+			unsigned int DisableBleeding:1;
+			unsigned int LockTopSection:1;
+			unsigned int ZeroRootDisplacement:1;
+			unsigned int ZeroRootRotation:1;
+			unsigned int DisableSounds:1;
+		};
+		unsigned int flags;
+	};
+	
 
 	int root_section_id;
 	
@@ -4922,18 +4928,7 @@ void LoadHierarchy(SAVE_BLOCK_HEADER* header,HMODELCONTROLLER* controller)
 	COPYELEMENT_LOAD(After_Tweening_Sub_Sequence)
 	COPYELEMENT_LOAD(AT_seconds_for_sequence)
 	COPYELEMENT_LOAD(AT_sequence_timer)
-	COPYELEMENT_LOAD(Playing)
-	COPYELEMENT_LOAD(Reversed)
-	COPYELEMENT_LOAD(Looped)
-	COPYELEMENT_LOAD(Tweening)
-	COPYELEMENT_LOAD(LoopAfterTweening)
-	COPYELEMENT_LOAD(StopAfterTweening)
-	COPYELEMENT_LOAD(ElevationTweening)
-	COPYELEMENT_LOAD(DisableBleeding)
-	COPYELEMENT_LOAD(LockTopSection)
-	COPYELEMENT_LOAD(ZeroRootDisplacement)
-	COPYELEMENT_LOAD(ZeroRootRotation)
-	COPYELEMENT_LOAD(DisableSounds);
+	COPYELEMENT_LOAD(flags)
 
 	
 	//load the delta sequences
@@ -4978,18 +4973,7 @@ void SaveHierarchy(HMODELCONTROLLER* controller)
 	COPYELEMENT_SAVE(After_Tweening_Sub_Sequence)
 	COPYELEMENT_SAVE(AT_seconds_for_sequence)
 	COPYELEMENT_SAVE(AT_sequence_timer)
-	COPYELEMENT_SAVE(Playing)
-	COPYELEMENT_SAVE(Reversed)
-	COPYELEMENT_SAVE(Looped)
-	COPYELEMENT_SAVE(Tweening)
-	COPYELEMENT_SAVE(LoopAfterTweening)
-	COPYELEMENT_SAVE(StopAfterTweening)
-	COPYELEMENT_SAVE(ElevationTweening)
-	COPYELEMENT_SAVE(DisableBleeding)
-	COPYELEMENT_SAVE(LockTopSection)
-	COPYELEMENT_SAVE(ZeroRootDisplacement)
-	COPYELEMENT_SAVE(ZeroRootRotation)
-	COPYELEMENT_SAVE(DisableSounds);
+	COPYELEMENT_SAVE(flags)
 
 	block->root_section_id = controller->Root_Section->IDnumber;
 
@@ -5035,9 +5019,15 @@ typedef struct hierarchy_delta_save_block
 	int sub_sequence;
 	int seconds_for_sequence;
 	int timer_increment;
-	int Looped:1;
-	int Playing:1;
-	int Active:1;
+	union {
+		struct {
+			int Looped:1;
+			int Playing:1;
+			int Active:1;
+		};
+		int flags;
+	};
+	
 
 }HIERARCHY_DELTA_SAVE_BLOCK;
 
@@ -5061,9 +5051,7 @@ static void LoadHierarchyDelta(SAVE_BLOCK_HEADER* header,HMODELCONTROLLER* contr
 	COPYELEMENT_LOAD(timer)
 	COPYELEMENT_LOAD(lastframe_timer)
 	COPYELEMENT_LOAD(timer_increment)
-	COPYELEMENT_LOAD(Looped)
-	COPYELEMENT_LOAD(Playing)
-	COPYELEMENT_LOAD(Active)
+	COPYELEMENT_LOAD(flags)
 	COPYELEMENT_LOAD(sequence_type)
 	COPYELEMENT_LOAD(sub_sequence)
 	COPYELEMENT_LOAD(seconds_for_sequence)
@@ -5089,9 +5077,7 @@ static void SaveHierarchyDelta(DELTA_CONTROLLER* delta)
 	COPYELEMENT_SAVE(timer)
 	COPYELEMENT_SAVE(lastframe_timer)
 	COPYELEMENT_SAVE(timer_increment)
-	COPYELEMENT_SAVE(Looped)
-	COPYELEMENT_SAVE(Playing)
-	COPYELEMENT_SAVE(Active)
+	COPYELEMENT_SAVE(flags)
 	COPYELEMENT_SAVE(sequence_type)
 	COPYELEMENT_SAVE(sub_sequence)
 	COPYELEMENT_SAVE(seconds_for_sequence)
@@ -5543,7 +5529,7 @@ typedef struct hierarchy_tween_save_block
 	int omega;
 	int oneoversinomega;
 	int oneovertweeninglength;	
-	unsigned int Tweening:1;
+	unsigned int Tweening;
 
 	
 }HIERARCHY_TWEEN_SAVE_BLOCK;

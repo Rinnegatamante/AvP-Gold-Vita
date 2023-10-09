@@ -71,13 +71,20 @@ typedef struct track_controller
 	TRACK_SOUND* end_sound;
 
 	int initial_state_timer; //used by Reset_Track()
-
-	unsigned int playing:1;
-	unsigned int reverse:1;
-	unsigned int no_rotation:1;
+	
+	union {
+		struct {
+			unsigned int playing:1;
+			unsigned int reverse:1;
+			unsigned int no_rotation:1;
+			unsigned int use_speed_mult:1;
+		};
+		unsigned int flags;
+	};
+	
 	unsigned int loop:1;
 	unsigned int loop_backandforth:1;
-	unsigned int use_speed_mult:1;
+	
 	unsigned int use_smoothing:1;
 	unsigned int playing_start_sound:1;
 	unsigned int initial_state_playing:1; //used by Reset_Track()

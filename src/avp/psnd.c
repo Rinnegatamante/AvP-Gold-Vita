@@ -742,12 +742,17 @@ typedef struct sound_save_block
 	ACTIVESOUNDPRIORITY priority;	
 	int volume;
 	int	pitch;
-	unsigned int loop :1;		
-	unsigned int threedee :1;
-	unsigned int paused :1;
-	unsigned int marine_ignore	:1;
-	unsigned int reverb_off :1;
-	unsigned int externalRef :1;
+	union {
+		struct {
+			unsigned int loop :1;		
+			unsigned int threedee :1;
+			unsigned int paused :1;
+			unsigned int marine_ignore	:1;
+			unsigned int reverb_off :1;
+		};
+		unsigned int flags;
+	};
+	unsigned int externalRef;
 	SOUND3DDATA threedeedata;
 	int position;
 }SOUND_SAVE_BLOCK;
@@ -838,11 +843,7 @@ void Save_SoundState(int* soundHandle)
 		COPYELEMENT_SAVE(priority)	
 		COPYELEMENT_SAVE(volume)
 		COPYELEMENT_SAVE(pitch)
-		COPYELEMENT_SAVE(loop)		
-		COPYELEMENT_SAVE(threedee)
-		COPYELEMENT_SAVE(paused)
-		COPYELEMENT_SAVE(marine_ignore)
-		COPYELEMENT_SAVE(reverb_off)
+		COPYELEMENT_SAVE(flags)
 		COPYELEMENT_SAVE(threedeedata)
 		block->externalRef = 1;
 
@@ -930,11 +931,7 @@ void Save_SoundsWithNoReference()
 				COPYELEMENT_SAVE(priority)	
 				COPYELEMENT_SAVE(volume)
 				COPYELEMENT_SAVE(pitch)
-				COPYELEMENT_SAVE(loop)		
-				COPYELEMENT_SAVE(threedee)
-				COPYELEMENT_SAVE(paused)
-				COPYELEMENT_SAVE(marine_ignore)
-				COPYELEMENT_SAVE(reverb_off)
+				COPYELEMENT_SAVE(flags)
 				COPYELEMENT_SAVE(threedeedata)
 				block->externalRef = 0;
 

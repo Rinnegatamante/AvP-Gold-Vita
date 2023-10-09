@@ -23,8 +23,8 @@ typedef struct sound_tools_template
 	unsigned long max_volume;
 	unsigned long pitch;
 	
-	unsigned int playing :1;
-	unsigned int loop :1;
+	unsigned int playing;
+	unsigned int loop;
 
 	char * sound_name;
 	LOADED_SOUND const * sound_loaded;
@@ -51,8 +51,8 @@ typedef struct sound_behav_block
 	
 	BOOL sound_not_started;
 
-	unsigned int playing :1;
-	unsigned int loop :1;
+	unsigned int playing;
+	unsigned int loop;
 	
 } SOUND_BEHAV_BLOCK;
 

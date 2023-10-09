@@ -87,7 +87,7 @@ typedef struct FrisbeeBehaviourType
 	int counter;
 	HMODELCONTROLLER HModelController;
 	int soundHandle;
-	int Bounced :1; 
+	int Bounced; 
 	int bounces;
 
 	LASER_BEAM_DESC Laser;
@@ -103,9 +103,9 @@ typedef struct PCPredDiscBehaviourType
 	char Prev_Damaged_SBname[SB_NAME_LENGTH];
 	HMODELCONTROLLER HModelController;
 	int soundHandle;
-	int Destruct:1;
-	int Stuck	:1;
-	int Bounced :1; 
+	int Destruct;
+	int Stuck;
+	int Bounced;
 	int bounces;
 				
 
@@ -124,7 +124,7 @@ typedef struct SpearBehaviourType
 	int SubType;
 
 	unsigned int SpearThroughFragment;
-	unsigned int Stuck :1;
+	unsigned int Stuck;
 
 } SPEAR_BEHAV_BLOCK;
 

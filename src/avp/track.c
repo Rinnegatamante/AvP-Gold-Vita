@@ -892,10 +892,15 @@ typedef struct track_save_block
 	int speed_mult;
 	int current_section;
 
-	unsigned int playing:1;
-	unsigned int reverse:1;
-	unsigned int no_rotation:1;
-	unsigned int use_speed_mult:1;
+	union {
+		struct {
+			unsigned int playing:1;
+			unsigned int reverse:1;
+			unsigned int no_rotation:1;
+			unsigned int use_speed_mult:1;
+		};
+		unsigned int flags;
+	};
 
 	unsigned int start_sound_playing:1;
 	unsigned int mid_sound_playing:1;
@@ -925,10 +930,7 @@ void LoadTrackPosition(SAVE_BLOCK_HEADER* header,TRACK_CONTROLLER* tc)
 	COPYELEMENT_LOAD(speed_mult)
 	COPYELEMENT_LOAD(current_section)
 
-	COPYELEMENT_LOAD(playing)
-	COPYELEMENT_LOAD(reverse)
-	COPYELEMENT_LOAD(no_rotation)
-	COPYELEMENT_LOAD(use_speed_mult)
+	COPYELEMENT_LOAD(flags)
 
 	Update_Track_Position_Only(tc);
 
@@ -971,10 +973,7 @@ void SaveTrackPosition(TRACK_CONTROLLER* tc)
 	COPYELEMENT_SAVE(speed_mult)
 	COPYELEMENT_SAVE(current_section)
 
-	COPYELEMENT_SAVE(playing)
-	COPYELEMENT_SAVE(reverse)
-	COPYELEMENT_SAVE(no_rotation)
-	COPYELEMENT_SAVE(use_speed_mult)
+	COPYELEMENT_SAVE(flags)
 
 	if(tc->start_sound)
 	{

@@ -866,7 +866,7 @@ typedef struct corpse_save_block
 
 	int Wounds;
 
-	int DeathFiring	:1;
+	int DeathFiring;
 
 	
 	int deathCode;
@@ -964,7 +964,7 @@ void LoadStrategy_Corpse(SAVE_BLOCK_STRATEGY_HEADER* header)
 	//copy strategy block stuff
 	*sbPtr->DynPtr = block->dynamics;
 	sbPtr->integrity = block->integrity;
-	sbPtr->SBDamageBlock = block->SBDamageBlock;
+	memcpy(&sbPtr->SBDamageBlock, &block->SBDamageBlock, sizeof(block->SBDamageBlock));
 
 	//hit location table
 	if(block->hltable_index>=0)
@@ -1065,7 +1065,7 @@ void SaveStrategy_Corpse(STRATEGYBLOCK* sbPtr)
 	block->dynamics.CollisionReportPtr=0;
 	
 	block->integrity = sbPtr->integrity;
-	block->SBDamageBlock = sbPtr->SBDamageBlock;
+	memcpy(&block->SBDamageBlock, &sbPtr->SBDamageBlock, sizeof(sbPtr->SBDamageBlock));
 
 	//save the  hierarchy
 	SaveHierarchy(&corpseDataPtr->HModelController);

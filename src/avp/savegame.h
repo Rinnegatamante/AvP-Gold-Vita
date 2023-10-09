@@ -35,7 +35,7 @@ typedef enum save_block_type
 //structure needs to be at the start of each block
 typedef struct save_block_header
 {
-	SAVE_BLOCK_TYPE type;
+	uint32_t type;
 	int size;
 }SAVE_BLOCK_HEADER;
 
@@ -43,7 +43,7 @@ typedef struct save_block_header
 //structure to go at the start of stategy save blocks
 typedef struct save_block_strategy_header
 {
-	SAVE_BLOCK_TYPE type;
+	uint32_t type;
 	int size;
 
 	AVP_BEHAVIOUR_TYPE bhvr_type;
@@ -67,9 +67,15 @@ typedef struct level_save_block
 
 }LEVEL_SAVE_BLOCK;
 
-
+#ifdef __vita__
+#undef No
+#include <vitasdk.h>
+#define COPYELEMENT_LOAD(element) sceClibMemcpy(&SAVELOAD_BEHAV->element, &SAVELOAD_BLOCK->element, sizeof(SAVELOAD_BLOCK->element));
+#define COPYELEMENT_SAVE(element) sceClibMemcpy(&SAVELOAD_BLOCK->element, &SAVELOAD_BEHAV->element, sizeof(SAVELOAD_BEHAV->element));
+#else
 #define COPYELEMENT_LOAD(element) SAVELOAD_BEHAV->element = SAVELOAD_BLOCK->element;
 #define COPYELEMENT_SAVE(element) SAVELOAD_BLOCK->element = SAVELOAD_BEHAV->element;
+#endif
 
 #define COPYELEMENT_LOAD_EXT(block,behav) behav=block;
 #define COPYELEMENT_SAVE_EXT(block,behav) block=behav;
@@ -85,11 +91,17 @@ extern SAVE_BLOCK_HEADER* GetNextBlockIfOfType(SAVE_BLOCK_TYPE type);
 #define GET_SAVE_BLOCK_POINTER(block) block = GetPointerForSaveBlock(sizeof(*block))
 
 #define GET_STRATEGY_SAVE_BLOCK(block,sbPtr)\
+	printf("a\n");\
 	block = GetPointerForSaveBlock(sizeof(*block));\
+	printf("b\n");\
 	block->header.type = SaveBlock_Strategy;\
+	printf("c\n");\
 	block->header.size = sizeof(*block);\
+	printf("d\n");\
 	block->header.bhvr_type = sbPtr->I_SBtype;\
-	COPY_NAME(block->header.SBname,sbPtr->SBname);
+	printf("e\n");\
+	COPY_NAME(block->header.SBname,sbPtr->SBname);\
+	printf("f\n");
 
 
 extern void SaveGame();

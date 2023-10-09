@@ -107,7 +107,7 @@ typedef struct queenStatusBlock
 	VECTORCH TargetDirection; //targets direction relative to queen
 	VECTORCH VectToTarget;
 
-	unsigned int PlayingHitDelta :1;
+	unsigned int PlayingHitDelta;
 
 	int SwerveTimer;
 	BOOL SwerveDirection;

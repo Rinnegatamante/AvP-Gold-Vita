@@ -247,7 +247,7 @@ typedef struct section_data {
 	int omega;
 	int oneoversinomega;
 	int oneovertweeninglength;	
-	unsigned int Tweening:1;
+	unsigned int Tweening;
 
 } SECTION_DATA;
 
@@ -267,9 +267,14 @@ typedef struct delta_controller {
 	int sub_sequence;
 	int seconds_for_sequence;
 	int timer_increment;
-	int Looped:1;
-	int Playing:1;
-	int Active:1;
+	union {
+		struct {
+			int Looped:1;
+			int Playing:1;
+			int Active:1;
+		};
+		int flags;
+	};
 	struct delta_controller *next_controller;
 	struct hmodelcontroller *my_hmodel_controller;
 } DELTA_CONTROLLER;
@@ -297,18 +302,23 @@ typedef struct hmodelcontroller {
 	int AT_seconds_for_sequence;
 	int AT_sequence_timer;
 
-	unsigned int Playing:1;
-	unsigned int Reversed:1;
-	unsigned int Looped:1;
-	unsigned int Tweening:2;
-	unsigned int LoopAfterTweening:1;
-	unsigned int StopAfterTweening:1;
-	unsigned int ElevationTweening:1;
-	unsigned int DisableBleeding:1;
-	unsigned int LockTopSection:1;
-	unsigned int ZeroRootDisplacement:1;
-	unsigned int ZeroRootRotation:1;
-	unsigned int DisableSounds:1;
+	union {
+		struct {
+			unsigned int Playing:1;
+			unsigned int Reversed:1;
+			unsigned int Looped:1;
+			unsigned int Tweening:2;
+			unsigned int LoopAfterTweening:1;
+			unsigned int StopAfterTweening:1;
+			unsigned int ElevationTweening:1;
+			unsigned int DisableBleeding:1;
+			unsigned int LockTopSection:1;
+			unsigned int ZeroRootDisplacement:1;
+			unsigned int ZeroRootRotation:1;
+			unsigned int DisableSounds:1;
+		};
+		unsigned int flags;
+	};
 	/* Bear in mind that 'Reversed' carries A LOT
 	of overhead.  In fact, it does it the old way,
 	looking down the entire frame list each frame. */

@@ -56,7 +56,7 @@ typedef struct facehuggerStatusBlock
 	int CurveRadius;
 	int CurveLength;
 	int CurveTimeOut;
-  	unsigned int jumping :1;	
+  	unsigned int jumping;	
 	NPC_MOVEMENTDATA moveData;
 	HMODELCONTROLLER HModelController;
 	int soundHandle;

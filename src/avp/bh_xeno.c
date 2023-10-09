@@ -5017,37 +5017,42 @@ typedef struct xenoborg_save_block
  	LASER_BEAM_DESC LeftMainBeam;
  	LASER_BEAM_DESC RightMainBeam;
  	LASER_BEAM_DESC TargetingLaser[3];
-
-	unsigned int headpandir			:1;
-	unsigned int headtiltdir		:1;
-	unsigned int leftarmpandir		:1;
-	unsigned int leftarmtiltdir		:1;
-	unsigned int rightarmpandir		:1;
-	unsigned int rightarmtiltdir	:1;
-	unsigned int torsotwistdir		:1;
 	
-	unsigned int headLock			:1;
-	unsigned int leftArmLock		:1;
-	unsigned int rightArmLock		:1;
-	unsigned int targetSightTest	:1;
-	unsigned int IAmFar				:1;
-	unsigned int ShotThisFrame		:1;
+	union {
+		struct {
+			unsigned int headpandir			:1;
+			unsigned int headtiltdir		:1;
+			unsigned int leftarmpandir		:1;
+			unsigned int leftarmtiltdir		:1;
+			unsigned int rightarmpandir		:1;
+			unsigned int rightarmtiltdir	:1;
+			unsigned int torsotwistdir		:1;
 	
-	unsigned int FiringLeft			:1;
-	unsigned int FiringRight		:1;
+			unsigned int headLock			:1;
+			unsigned int leftArmLock		:1;
+			unsigned int rightArmLock		:1;
+			unsigned int targetSightTest	:1;
+			unsigned int IAmFar				:1;
+			unsigned int ShotThisFrame		:1;
+	
+			unsigned int FiringLeft			:1;
+			unsigned int FiringRight		:1;
 
-	unsigned int UseHeadLaser		:1;
-	unsigned int UseLALaser			:1;
-	unsigned int UseRALaser			:1;
+			unsigned int UseHeadLaser		:1;
+			unsigned int UseLALaser			:1;
+			unsigned int UseRALaser			:1;
 
-	unsigned int HeadLaserOnTarget	:1;
-	unsigned int LALaserOnTarget	:1;
-	unsigned int RALaserOnTarget	:1;
+			unsigned int HeadLaserOnTarget	:1;
+			unsigned int LALaserOnTarget	:1;
+			unsigned int RALaserOnTarget	:1;
 
-	unsigned int head_moving		:1;
-	unsigned int la_moving			:1;
-	unsigned int ra_moving			:1;
-	unsigned int torso_moving		:1;
+			unsigned int head_moving		:1;
+			unsigned int la_moving			:1;
+			unsigned int ra_moving			:1;
+			unsigned int torso_moving		:1;
+		};
+		unsigned int flags;
+	};
    
 	int incidentFlag;
 	int incidentTimer;
@@ -5129,36 +5134,7 @@ void LoadStrategy_Xenoborg(SAVE_BLOCK_STRATEGY_HEADER* header)
  	COPYELEMENT_LOAD(RightMainBeam)
  	
 
-	COPYELEMENT_LOAD(headpandir)
-	COPYELEMENT_LOAD(headtiltdir)
-	COPYELEMENT_LOAD(leftarmpandir)
-	COPYELEMENT_LOAD(leftarmtiltdir)
-	COPYELEMENT_LOAD(rightarmpandir)
-	COPYELEMENT_LOAD(rightarmtiltdir)
-	COPYELEMENT_LOAD(torsotwistdir)
-	
-	COPYELEMENT_LOAD(headLock)
-	COPYELEMENT_LOAD(leftArmLock)
-	COPYELEMENT_LOAD(rightArmLock)
-	COPYELEMENT_LOAD(targetSightTest)
-	COPYELEMENT_LOAD(IAmFar)
-	COPYELEMENT_LOAD(ShotThisFrame)
-	
-	COPYELEMENT_LOAD(FiringLeft)
-	COPYELEMENT_LOAD(FiringRight)
-
-	COPYELEMENT_LOAD(UseHeadLaser)
-	COPYELEMENT_LOAD(UseLALaser)
-	COPYELEMENT_LOAD(UseRALaser)
-
-	COPYELEMENT_LOAD(HeadLaserOnTarget)
-	COPYELEMENT_LOAD(LALaserOnTarget)
-	COPYELEMENT_LOAD(RALaserOnTarget)
-
-	COPYELEMENT_LOAD(head_moving)
-	COPYELEMENT_LOAD(la_moving)
-	COPYELEMENT_LOAD(ra_moving)
-	COPYELEMENT_LOAD(torso_moving)
+	COPYELEMENT_LOAD(flags)
    
 	COPYELEMENT_LOAD(incidentFlag)
 	COPYELEMENT_LOAD(incidentTimer)
@@ -5183,7 +5159,7 @@ void LoadStrategy_Xenoborg(SAVE_BLOCK_STRATEGY_HEADER* header)
 	//copy strategy block stuff
 	*sbPtr->DynPtr = block->dynamics;
 	sbPtr->integrity = block->integrity;
-	sbPtr->SBDamageBlock = block->SBDamageBlock;
+	memcpy(&sbPtr->SBDamageBlock, &block->SBDamageBlock, sizeof(block->SBDamageBlock));
 
 	//load hierarchy
 	{
@@ -5245,36 +5221,7 @@ void SaveStrategy_Xenoborg(STRATEGYBLOCK* sbPtr)
  	COPYELEMENT_SAVE(RightMainBeam)
  	
 
-	COPYELEMENT_SAVE(headpandir)
-	COPYELEMENT_SAVE(headtiltdir)
-	COPYELEMENT_SAVE(leftarmpandir)
-	COPYELEMENT_SAVE(leftarmtiltdir)
-	COPYELEMENT_SAVE(rightarmpandir)
-	COPYELEMENT_SAVE(rightarmtiltdir)
-	COPYELEMENT_SAVE(torsotwistdir)
-	
-	COPYELEMENT_SAVE(headLock)
-	COPYELEMENT_SAVE(leftArmLock)
-	COPYELEMENT_SAVE(rightArmLock)
-	COPYELEMENT_SAVE(targetSightTest)
-	COPYELEMENT_SAVE(IAmFar)
-	COPYELEMENT_SAVE(ShotThisFrame)
-	
-	COPYELEMENT_SAVE(FiringLeft)
-	COPYELEMENT_SAVE(FiringRight)
-
-	COPYELEMENT_SAVE(UseHeadLaser)
-	COPYELEMENT_SAVE(UseLALaser)
-	COPYELEMENT_SAVE(UseRALaser)
-
-	COPYELEMENT_SAVE(HeadLaserOnTarget)
-	COPYELEMENT_SAVE(LALaserOnTarget)
-	COPYELEMENT_SAVE(RALaserOnTarget)
-
-	COPYELEMENT_SAVE(head_moving)
-	COPYELEMENT_SAVE(la_moving)
-	COPYELEMENT_SAVE(ra_moving)
-	COPYELEMENT_SAVE(torso_moving)
+	COPYELEMENT_SAVE(flags)
    
 	COPYELEMENT_SAVE(incidentFlag)
 	COPYELEMENT_SAVE(incidentTimer)
@@ -5300,7 +5247,7 @@ void SaveStrategy_Xenoborg(STRATEGYBLOCK* sbPtr)
 	block->dynamics.CollisionReportPtr=0;
 	
 	block->integrity = sbPtr->integrity;
-	block->SBDamageBlock = sbPtr->SBDamageBlock;
+	memcpy(&block->SBDamageBlock, &sbPtr->SBDamageBlock, sizeof(sbPtr->SBDamageBlock));
 
 	//save the hierarchy
 	SaveHierarchy(&xenoStatusPointer->HModelController);

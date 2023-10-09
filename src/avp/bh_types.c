@@ -1743,7 +1743,7 @@ static void DoorProxBehaveFun(STRATEGYBLOCK* sbptr)
 	MORPHCTRL *mctrl;
 	DISPLAYBLOCK* dptr;
 	MODULE *mptr;
-	BOOL open_door = No;
+	BOOL open_door = 0;
 
  	GLOBALASSERT(sbptr);
 	doorbhv = (PROXDOOR_BEHAV_BLOCK*)sbptr->SBdataptr;
@@ -1787,7 +1787,7 @@ static void DoorProxBehaveFun(STRATEGYBLOCK* sbptr)
 
 	if (doorbhv->door_locked)
 	{
-		open_door = No;
+		open_door = 0;
 	}
 
  	switch(doorbhv->door_state)
@@ -1989,7 +1989,7 @@ static int AnythingNearProxDoor(MODULE *doorModulePtr,PROXDOOR_BEHAV_BLOCK *door
 	/* loop thro' the strategy block list... 
 	looking for triggerable objects (please feel free to add any
 	sensible object types) */
-	retval=No;
+	retval=0;
 
 	while(sbIndex < NumActiveStBlocks)
 	{	

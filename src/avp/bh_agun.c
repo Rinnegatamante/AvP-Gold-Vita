@@ -1554,7 +1554,7 @@ typedef struct agun_save_block
 	SAVE_BLOCK_STRATEGY_HEADER header;
 
 //behaviour block stuff
-	AG_STATE behaviourState;
+	uint32_t behaviourState;
 	int stateTimer;
 
 	VECTORCH targetTrackPos;
@@ -1573,13 +1573,18 @@ typedef struct agun_save_block
 	int WhirrSoundOn;
 	int Drama;
 
-  	unsigned int createdByPlayer:1;
-	unsigned int gunpandir	:1;
-	unsigned int guntiltdir	:1;
-	unsigned int IAmFar	:1;
+  	union {
+		struct {
+			unsigned int createdByPlayer:1;
+			unsigned int gunpandir	:1;
+			unsigned int guntiltdir	:1;
+			unsigned int IAmFar	:1;
 
-	unsigned int OnTarget	:1;
-	unsigned int OnTarget_LastFrame	:1;
+			unsigned int OnTarget	:1;
+			unsigned int OnTarget_LastFrame	:1;
+		};
+		unsigned int flags;
+	};
 //annoying pointer related things
 
 	char Target_SBname[SB_NAME_LENGTH];
@@ -1629,12 +1634,7 @@ void LoadStrategy_Autogun(SAVE_BLOCK_STRATEGY_HEADER* header)
 	COPYELEMENT_LOAD(Firing)
 	COPYELEMENT_LOAD(WhirrSoundOn)
 	COPYELEMENT_LOAD(Drama)
-	COPYELEMENT_LOAD(createdByPlayer)
-	COPYELEMENT_LOAD(gunpandir)
-	COPYELEMENT_LOAD(guntiltdir)
-	COPYELEMENT_LOAD(IAmFar)
-	COPYELEMENT_LOAD(OnTarget)
-	COPYELEMENT_LOAD(OnTarget_LastFrame)
+	COPYELEMENT_LOAD(flags)
 
 	//load target
 	COPY_NAME(agunStatusPointer->Target_SBname,block->Target_SBname);
@@ -1644,7 +1644,7 @@ void LoadStrategy_Autogun(SAVE_BLOCK_STRATEGY_HEADER* header)
 	//copy strategy block stuff
 	*sbPtr->DynPtr = block->dynamics;
 	sbPtr->integrity = block->integrity;
-	sbPtr->SBDamageBlock = block->SBDamageBlock;
+	memcpy(&sbPtr->SBDamageBlock, &block->SBDamageBlock, sizeof(block->SBDamageBlock));
 
 	//load hierarchy
 	{
@@ -1685,12 +1685,7 @@ void SaveStrategy_Autogun(STRATEGYBLOCK* sbPtr)
 	COPYELEMENT_SAVE(Firing)
 	COPYELEMENT_SAVE(WhirrSoundOn)
 	COPYELEMENT_SAVE(Drama)
-	COPYELEMENT_SAVE(createdByPlayer)
-	COPYELEMENT_SAVE(gunpandir)
-	COPYELEMENT_SAVE(guntiltdir)
-	COPYELEMENT_SAVE(IAmFar)
-	COPYELEMENT_SAVE(OnTarget)
-	COPYELEMENT_SAVE(OnTarget_LastFrame)
+	COPYELEMENT_SAVE(flags)
 
 	//save target
 	COPY_NAME(block->Target_SBname,agunStatusPointer->Target_SBname);
@@ -1700,7 +1695,7 @@ void SaveStrategy_Autogun(STRATEGYBLOCK* sbPtr)
 	block->dynamics.CollisionReportPtr=0;
 	
 	block->integrity = sbPtr->integrity;
-	block->SBDamageBlock = sbPtr->SBDamageBlock;
+	memcpy(&block->SBDamageBlock, &sbPtr->SBDamageBlock, sizeof(sbPtr->SBDamageBlock));
 
 	//save the hierarchy
 	SaveHierarchy(&agunStatusPointer->HModelController);

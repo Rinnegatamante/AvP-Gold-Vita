@@ -275,8 +275,13 @@ typedef struct switch_door_save_block
 
 	DOOR_STATES doorState;
 	int openTimer;
-	unsigned int requestOpen :1;
-	unsigned int requestClose :1;
+	union {
+		struct {
+			unsigned int requestOpen :1;
+			unsigned int requestClose :1;
+		};
+		unsigned int flags;
+	};
 		
 	//from the morph control
 	int ObMorphCurrFrame;
@@ -310,8 +315,7 @@ void LoadStrategy_SwitchDoor(SAVE_BLOCK_STRATEGY_HEADER* header)
 
 	COPYELEMENT_LOAD(doorState)
 	COPYELEMENT_LOAD(openTimer)
-	COPYELEMENT_LOAD(requestOpen)
-	COPYELEMENT_LOAD(requestClose)
+	COPYELEMENT_LOAD(flags)
 
 	COPYELEMENT_LOAD_EXT(block->ObMorphCurrFrame,doorbhv->morfControl->ObMorphCurrFrame)
 	COPYELEMENT_LOAD_EXT(block->ObMorphFlags , doorbhv->morfControl->ObMorphFlags)
@@ -331,8 +335,7 @@ void SaveStrategy_SwitchDoor(STRATEGYBLOCK* sbPtr)
 
 	COPYELEMENT_SAVE(doorState)
 	COPYELEMENT_SAVE(openTimer)
-	COPYELEMENT_SAVE(requestOpen)
-	COPYELEMENT_SAVE(requestClose)
+	COPYELEMENT_SAVE(flags)
 	
 	COPYELEMENT_SAVE_EXT(block->ObMorphCurrFrame,doorbhv->morfControl->ObMorphCurrFrame)
 	COPYELEMENT_SAVE_EXT(block->ObMorphFlags , doorbhv->morfControl->ObMorphFlags)

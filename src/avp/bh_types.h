@@ -242,23 +242,34 @@ typedef struct player_status
 	/* security clearances */
 	unsigned int securityClearances;
 	/* useful flags */
-	unsigned int IsAlive :1;
-	unsigned int IsImmortal :1;
-	unsigned int Mvt_AnalogueTurning :1;
-	unsigned int Mvt_AnaloguePitching :1;
-	unsigned int Absolute_Pitching :1;
-	unsigned int SwappingIsDebounced :1;
-	unsigned int DemoMode :1;
-	unsigned int IHaveAPlacedAutogun :1;
-	unsigned int IsMovingInWater :1;
-	unsigned int JetpackEnabled :1;
-	unsigned int GrapplingHookEnabled :1;
-
+	union {
+		struct {
+			unsigned int IsAlive :1;
+			unsigned int IsImmortal :1;
+			unsigned int Mvt_AnalogueTurning :1;
+			unsigned int Mvt_AnaloguePitching :1;
+			unsigned int Absolute_Pitching :1;
+			unsigned int SwappingIsDebounced :1;
+			unsigned int DemoMode :1;
+			unsigned int IHaveAPlacedAutogun :1;
+			unsigned int IsMovingInWater :1;
+			unsigned int JetpackEnabled :1;
+			unsigned int GrapplingHookEnabled :1;
+		};
+		unsigned int flags;
+	};
+	
 	unsigned int MTrackerType;
 
 	/* Patrick: 1/7/97 : for predator-type cloaking stuff */
-	unsigned int cloakOn :1;
-	unsigned int cloakPositionGivenAway :1;
+	union {
+		struct {
+			unsigned int cloakOn :1;
+			unsigned int cloakPositionGivenAway :1;
+		};
+		unsigned int cloak_flags;
+	};
+	
 	int FieldCharge;
 	int cloakPositionGivenAwayTimer;
 	int PlasmaCasterCharge;

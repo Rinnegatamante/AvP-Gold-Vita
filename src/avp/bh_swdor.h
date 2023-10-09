@@ -10,8 +10,13 @@ typedef struct switch_door_behaviour_type
 	char linkedDoorName[SB_NAME_LENGTH];
 	STRATEGYBLOCK* linkedDoorPtr;
 	int openTimer;
-	unsigned int requestOpen :1;
-	unsigned int requestClose :1;
+	union {
+		struct {
+			unsigned int requestOpen :1;
+			unsigned int requestClose :1;
+		};
+		unsigned int flags;
+	};
 	int SoundHandle;
 	int doorType;      // Used to determine door sound type  
 

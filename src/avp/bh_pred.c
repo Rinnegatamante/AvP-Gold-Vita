@@ -7008,8 +7008,13 @@ typedef struct predator_save_block
 
 	/* And these for the laser dots. */
 	THREE_LASER_DOT_DESC Pred_Laser_Sight;
-	int Pred_Laser_On	:1;
-	int Explode			:1;
+	union {
+		struct {
+			int Pred_Laser_On	:1;
+			int Explode			:1;
+		};
+		int flags;
+	};
 
 	int path;
 	int stepnumber;
@@ -7095,8 +7100,7 @@ void LoadStrategy_Predator(SAVE_BLOCK_STRATEGY_HEADER* header)
 	COPYELEMENT_LOAD(CloakingEffectiveness)
 	COPYELEMENT_LOAD(CloakTimer)
 	COPYELEMENT_LOAD(Pred_Laser_Sight)
-	COPYELEMENT_LOAD(Pred_Laser_On)
-	COPYELEMENT_LOAD(Explode)
+	COPYELEMENT_LOAD(flags)
 	COPYELEMENT_LOAD(path)
 	COPYELEMENT_LOAD(stepnumber)
 
@@ -7117,7 +7121,7 @@ void LoadStrategy_Predator(SAVE_BLOCK_STRATEGY_HEADER* header)
 	//copy strategy block stuff
 	*sbPtr->DynPtr = block->dynamics;
 	sbPtr->integrity = block->integrity;
-	sbPtr->SBDamageBlock = block->SBDamageBlock;
+	memcpy(&sbPtr->SBDamageBlock, &block->SBDamageBlock, sizeof(block->SBDamageBlock));
 
 	//load hierarchy
 	{
@@ -7174,8 +7178,7 @@ void SaveStrategy_Predator(STRATEGYBLOCK* sbPtr)
 	COPYELEMENT_SAVE(CloakingEffectiveness)
 	COPYELEMENT_SAVE(CloakTimer)
 	COPYELEMENT_SAVE(Pred_Laser_Sight)
-	COPYELEMENT_SAVE(Pred_Laser_On)
-	COPYELEMENT_SAVE(Explode)
+	COPYELEMENT_SAVE(flags)
 	COPYELEMENT_SAVE(path)
 	COPYELEMENT_SAVE(stepnumber)
 
@@ -7207,7 +7210,7 @@ void SaveStrategy_Predator(STRATEGYBLOCK* sbPtr)
 	block->dynamics.CollisionReportPtr=0;
 	
 	block->integrity = sbPtr->integrity;
-	block->SBDamageBlock = sbPtr->SBDamageBlock;
+	memcpy(&block->SBDamageBlock, &sbPtr->SBDamageBlock, sizeof(sbPtr->SBDamageBlock));
 
 	//save the hierarchy
 	SaveHierarchy(&predatorStatusPointer->HModelController);

@@ -4935,7 +4935,7 @@ typedef struct queen_save_block
 	VECTORCH TargetDirection; //targets direction relative to queen
 	VECTORCH VectToTarget;
 
-	unsigned int PlayingHitDelta :1;
+	unsigned int PlayingHitDelta;
 
 	int SwerveTimer;
 	BOOL SwerveDirection;
@@ -5052,7 +5052,7 @@ void LoadStrategy_Queen(SAVE_BLOCK_STRATEGY_HEADER* header)
 	//copy strategy block stuff
 	*sbPtr->DynPtr = block->dynamics;
 	sbPtr->integrity = block->integrity;
-	sbPtr->SBDamageBlock = block->SBDamageBlock;
+	memcpy(&sbPtr->SBDamageBlock, &block->SBDamageBlock, sizeof(block->SBDamageBlock));
 
 	//load hierarchy
 	{
@@ -5164,7 +5164,7 @@ void SaveStrategy_Queen(STRATEGYBLOCK* sbPtr)
 	block->dynamics.CollisionReportPtr=0;
 	
 	block->integrity = sbPtr->integrity;
-	block->SBDamageBlock = sbPtr->SBDamageBlock;
+	memcpy(&block->SBDamageBlock, &sbPtr->SBDamageBlock, sizeof(sbPtr->SBDamageBlock));
 
 	//save the hierarchy
 	SaveHierarchy(&queenStatusPointer->HModelController);

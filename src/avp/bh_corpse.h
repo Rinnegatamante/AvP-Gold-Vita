@@ -36,7 +36,7 @@ typedef struct netcorpsedatablock {
 
 	int Wounds;
 
-	int DeathFiring	:1;
+	int DeathFiring;
 	
 
 }NETCORPSEDATABLOCK;

@@ -45,7 +45,7 @@ typedef struct particle_generator_behav_block
 	int probability; //probability of particles (0 - 65536)
 	int speed;	//mm/second
 
-	unsigned int active :1;	//is generator currently active
+	unsigned int active;	//is generator currently active
 
 }PARTICLE_GENERATOR_BEHAV_BLOCK;
 

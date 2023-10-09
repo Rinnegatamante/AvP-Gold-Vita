@@ -19,7 +19,7 @@ typedef enum {
 
 typedef struct autogun_behaviour_block
 {
-	AG_STATE behaviourState;
+	uint32_t behaviourState;
 	int stateTimer;
 
 	HMODELCONTROLLER HModelController;
@@ -47,14 +47,21 @@ typedef struct autogun_behaviour_block
 	int Firing;
 	int WhirrSoundOn;
 	int Drama;
+	
+	union {
+		struct {
+			unsigned int createdByPlayer:1;
+			unsigned int gunpandir	:1;
+			unsigned int guntiltdir	:1;
+			unsigned int IAmFar	:1;
 
-  	unsigned int createdByPlayer:1;
-	unsigned int gunpandir	:1;
-	unsigned int guntiltdir	:1;
-	unsigned int IAmFar	:1;
+			unsigned int OnTarget	:1;
+			unsigned int OnTarget_LastFrame	:1;
+		};
+		unsigned int flags;
+	};
 
-	unsigned int OnTarget	:1;
-	unsigned int OnTarget_LastFrame	:1;
+  	
 
 	char death_target_ID[SB_NAME_LENGTH];
 	STRATEGYBLOCK* death_target_sbptr;

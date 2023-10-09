@@ -282,12 +282,10 @@ void SaveStrategy_PlacedSound(STRATEGYBLOCK* sbPtr)
 
 	sbb = (SOUND_BEHAV_BLOCK *)sbPtr->SBdataptr;
 
-
 	GET_STRATEGY_SAVE_BLOCK(block,sbPtr);
-	
+
 	//start copying stuff
 	COPYELEMENT_SAVE(playing)
-	
 	Save_SoundState(&sbb->activ_no);
 
 }

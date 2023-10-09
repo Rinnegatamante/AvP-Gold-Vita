@@ -53,12 +53,19 @@ typedef struct activesoundsample
 	ACTIVESOUNDPRIORITY priority;	
 	int volume;
 	int	pitch;
-	int *externalRef;			
-	unsigned int loop :1;		
-	unsigned int threedee :1;
-	unsigned int paused :1;
-	unsigned int marine_ignore	:1;
-	unsigned int reverb_off :1;
+	int *externalRef;
+	
+	union {
+		struct {
+			unsigned int loop :1;		
+			unsigned int threedee :1;
+			unsigned int paused :1;
+			unsigned int marine_ignore	:1;
+			unsigned int reverb_off :1;
+		};
+		unsigned int flags;
+	};
+	
 	SOUND3DDATA threedeedata;
 	
 //	LPDIRECTSOUNDBUFFER dsBufferP;
