@@ -299,11 +299,30 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wl,-q,-allow-multiple-definition -DVITA
 INCLUDE_DIRECTORIES(src/include)
 
 IF(NOT AVP_WEB)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(libavformat REQUIRED IMPORTED_TARGET libavformat)
+    pkg_check_modules(libavcodec REQUIRED IMPORTED_TARGET libavcodec)
+    pkg_check_modules(libavutil REQUIRED IMPORTED_TARGET libavutil)
+    pkg_check_modules(libswscale REQUIRED IMPORTED_TARGET libswscale)
+    pkg_check_modules(libswresample REQUIRED IMPORTED_TARGET libswresample)
+    pkg_check_modules(sdl2 REQUIRED IMPORTED_TARGET sdl2)
+    pkg_check_modules(openal REQUIRED IMPORTED_TARGET openal)
+    pkg_check_modules(libmpg123 REQUIRED IMPORTED_TARGET libmpg123)
     add_executable(avp ${source})
+    set_target_properties(avp PROPERTIES C_STANDARD 17 C_STANDARD_REQUIRED YES C_EXTENSIONS YES)
 
     INCLUDE_DIRECTORIES(${VITASDK}/arm-vita-eabi/include/SDL2)
 
     target_link_libraries(avp
+        -pthread
+        PkgConfig::libavformat
+        PkgConfig::libavcodec
+        PkgConfig::libavutil
+        PkgConfig::libswscale
+        PkgConfig::libswresample
+        PkgConfig::sdl2
+        PkgConfig::openal
+        PkgConfig::libmpg123
 		SDL2
 		vitaGL
 		mathneon
@@ -340,7 +359,6 @@ IF(NOT AVP_WEB)
 		SceShaccCg_stub
 		c
 		m
-		-Wl,--whole-archive pthread -Wl,--no-whole-archive
 	)
 
 ENDIF(NOT AVP_WEB)

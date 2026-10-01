@@ -374,7 +374,7 @@ static void FlushTriangleBuffers(int backup)
 		vglIndexPointerMapped(gIndices);
 		vglVertexAttribPointerMapped(0, gVertexBuffer);
 		
-		vglDrawObjects(GL_TRIANGLES, tarrc * 3, GL_FALSE);
+		vglDrawObjects(GL_TRIANGLES, tarrc * 3);
 		
 		gVertexBuffer += varrc * sizeof(varr[0]);
 		gIndices += tarrc * sizeof(tarr[0]);

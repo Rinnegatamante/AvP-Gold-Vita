@@ -31,6 +31,7 @@
 #include "avp_menugfx.hpp"
 #include "avp_intro.h"
 #include "fmv.h"
+#include "bink.h"
 
 /* used to get file time */
 #include <sys/types.h>
@@ -3387,6 +3388,11 @@ static void InteractWithMenuElement(enum AVPMENU_ELEMENT_INTERACTION_ID interact
 int LengthOfMenuText(char *textPtr);
 int LengthOfSmallMenuText(char *textPtr);
 
+static int RenderBigMenuText(char *textPtr, int x, int y, int alpha, enum AVPMENUFORMAT_ID format)
+{
+	return RenderMenuText(textPtr, x, y, alpha, format);
+}
+
 static void RenderMenuElement(AVPMENU_ELEMENT *elementPtr, int e, int y)
 {
 	int (*RenderText)(char *textPtr, int x, int y, int alpha, enum AVPMENUFORMAT_ID format);
@@ -3395,7 +3401,7 @@ static void RenderMenuElement(AVPMENU_ELEMENT *elementPtr, int e, int y)
 	
 	if (AvPMenus.FontToUse==AVPMENU_FONT_BIG)
 	{
-		RenderText = RenderMenuText;
+		RenderText = RenderBigMenuText;
 		MenuTextLength = LengthOfMenuText;
 	}
 	else

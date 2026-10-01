@@ -604,7 +604,7 @@ static int SetOGLVideoMode(int Width, int Height)
 		FullscreenTextureWidth = 640;
 		FullscreenTextureHeight = 480;
 		
-		window = 0xDEADBEEF;
+		window = (SDL_Window *)(uintptr_t)0xDEADBEEF;
 	}
 
 	SetWindowSize(Width, Height, Width, Height);
@@ -1239,7 +1239,7 @@ void FlipBuffers()
 	vglIndexPointerMapped(gIndices);
 	vglVertexAttribPointerMapped(0, gVertexBuffer);
 	
-	vglDrawObjects(GL_TRIANGLES, 6, GL_FALSE);
+	vglDrawObjects(GL_TRIANGLES, 6);
 	
 	InGameFlipBuffers();
 	

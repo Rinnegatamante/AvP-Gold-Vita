@@ -12,6 +12,9 @@
 #include <fcntl.h>
 #include <dirent.h>
 #include <fnmatch.h>
+#ifdef VITA
+#include <psp2/io/stat.h>
+#endif
 
 #include "fixer.h"
 #include "files.h"
